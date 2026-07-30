@@ -386,9 +386,25 @@ never set sign-in up must keep full access to their own records after any
 update; locking them out would be the worst bug this codebase could ship,
 because the records *are* the program. There is a test for it.
 
-**Students and guardians never invent a credential** (principle 5). No sign-up,
-no password rules, nothing to forget. The coordinator generates a short access
-code and reads it out; the family types it once. `describeSecretProblem` holds
+**There are two ways in, and principle 5 needs both.** The coordinator can
+hand somebody access — a username and a short code, read out, nothing for the
+family to invent or remember. Or somebody signs themselves up at `#/sign-up`,
+which is what stops a coordinator reading out twelve codes in a week. Self
+sign-up is an **addition**; the moment it becomes the only way in, principle 5
+is broken.
+
+**A self-created account is pending, and pending sees one screen.** No roster,
+no students, no contact details, no messages — the router checks
+`sessionIsPending()` before any route loads, so this is not enforced screen by
+screen. It is the entire safeguard for open sign-up, and it has to be: with no
+server there is no way to check that somebody claiming to be a tutor is that
+tutor. A coordinator says which person on the roster they are, and only then
+does anything open. `approveAccount` refuses to point a tutor account at a
+student record.
+
+`isPending` treats a null `personId` as pending regardless of `status`, so one
+bad hand-edit to a JSON file cannot open an account onto somebody else's data.
+Nobody can sign themselves up as a coordinator. `describeSecretProblem` holds
 tutors and coordinators to a length rule and holds families to nothing beyond
 the code. `generateAccessCode` uses no vowels and no O/0/I/1/l, so a code can
 neither spell anything nor be misheard down a phone line.

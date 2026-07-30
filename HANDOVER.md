@@ -192,6 +192,13 @@ If you do turn it on:
 2. Use **Give access** for everyone else. It generates a username and a short
    code — read them out over WeChat. Families never have to create an account,
    invent a password, or fill anything in.
+
+   Or let people **create their own account** from the sign-in screen, which
+   saves you reading out a dozen codes at the start of term. A new account
+   appears under **Waiting to be confirmed** and **sees nothing at all** until
+   you pick their name from the list and press Confirm. Do not skip that step
+   or leave it for a week: until you do it, a real tutor is locked out — and
+   the reason it exists is that anyone who finds the link can type any name.
 3. A code is shown **once**. If somebody loses theirs, press **New code**; it
    takes a couple of seconds and nothing is lost.
 

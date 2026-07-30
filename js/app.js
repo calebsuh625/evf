@@ -48,6 +48,8 @@ const ROUTES = [
 
   // No `nav`: reached by being signed out, not by choosing to go there.
   { path: '/sign-in',         key: 'auth.title',          nav: [],        load: () => import('./views/sign-in.js'), screen: 'sign-in' },
+  { path: '/sign-up',         key: 'auth.up.title',       nav: [],        load: () => import('./views/sign-up.js'), screen: 'sign-in' },
+  { path: '/pending',         key: 'auth.pending.title',  nav: [],        load: () => import('./views/pending.js'), screen: 'sign-in' },
 
   // Tutor
   { path: '/tutor',                   key: 'tutor.nav.home',         nav: ['tutor'], role: 'tutor', load: () => import('./views/tutor-home.js') },
@@ -336,12 +338,27 @@ async function renderRoute({ scrollToTop = true } = {}) {
    * This is navigation, not access control: the data is already in the
    * browser and anyone with developer tools can read it. See js/auth.js.
    */
-  if (store.needsSignIn() && route.path !== '/sign-in') {
+  if (store.needsSignIn() && route.path !== '/sign-in' && route.path !== '/sign-up') {
     const module = await import('./views/sign-in.js');
     if (token !== renderToken) return;
     module.render(container, { store, navigate });
     renderSampleBanner();
     document.title = `${t('auth.title')} · ${t('app.title')}`;
+    return;
+  }
+
+  /*
+   * Signed in, but nobody has said who they are yet. One screen, and it is
+   * not the one they asked for. This is the whole safeguard for open sign-up
+   * — see js/auth.js — so it comes before any route is loaded rather than
+   * being enforced screen by screen.
+   */
+  if (store.sessionIsPending() && route.path !== '/pending') {
+    const module = await import('./views/pending.js');
+    if (token !== renderToken) return;
+    module.render(container, { store, navigate });
+    renderSessionControls();
+    document.title = `${t('auth.pending.title')} · ${t('app.title')}`;
     return;
   }
 

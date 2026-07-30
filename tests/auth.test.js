@@ -17,7 +17,8 @@ import {
   hashSecret, verifySecret, newSalt, newAccount, attemptSignIn, findAccount,
   normalizeSecret, normalizeUsername, generateAccessCode, describeSecretProblem,
   viewAsFor, hasAccounts, peopleWithoutAccounts, suggestUsername,
-  PBKDF2_ITERATIONS, ACCOUNT_ROLES, CODE_ROLES
+  isPending, pendingAccounts,
+  PBKDF2_ITERATIONS, ACCOUNT_ROLES, ACCOUNT_STATUSES, CODE_ROLES
 } from '../js/auth.js';
 
 const PASSWORD = 'saturday mornings';
@@ -314,5 +315,78 @@ describe('newAccount', () => {
   it('gives the coordinator no person record', async () => {
     const account = await newAccount({ id: 'x', role: 'admin', username: 'coordinator', secret: 'a long password' });
     equal(account.personId, null);
+  });
+});
+
+
+/* ---------------------------------------------------------------- *
+ * Signing yourself up
+ *
+ * The safeguard being tested here is the only thing standing between a
+ * stranger who found the URL and a child's guardian contacts. A self-created
+ * account must be pending, and pending must mean unattached — the app decides
+ * what to show from `isPending`, so if these ever pass wrongly the gate opens
+ * silently.
+ * ---------------------------------------------------------------- */
+
+describe('self sign-up', () => {
+  async function selfSignUp(role = 'tutor') {
+    return newAccount({
+      id: 'acct_new', role, username: 'newcomer', secret: 'a long enough password',
+      status: 'pending', claimedName: 'Sam Sigma'
+    });
+  }
+
+  it('lands pending, attached to nobody', async () => {
+    const account = await selfSignUp();
+    equal(account.status, 'pending');
+    equal(account.personId, null, 'a claimed role must not grant a person record');
+    ok(isPending(account));
+  });
+
+  it('stays pending for every self-serve role', async () => {
+    for (const role of ['tutor', 'student', 'guardian']) {
+      ok(isPending(await selfSignUp(role)), `${role} must not self-approve`);
+    }
+  });
+
+  it('records the typed name without treating it as identity', async () => {
+    const account = await selfSignUp();
+    equal(account.claimedName, 'Sam Sigma');
+    equal(account.personId, null, 'a name somebody typed is not a link to a person');
+  });
+
+  it('stops being pending only once a person is attached', async () => {
+    const account = await selfSignUp();
+    ok(isPending(account));
+    ok(!isPending({ ...account, status: 'active', personId: 'p_t01' }));
+  });
+
+  it('treats an active account with no person as still pending', async () => {
+    // Belt and braces: `status` alone deciding this would mean one bad edit
+    // to a JSON file opens somebody's account onto nothing — or onto
+    // everything, depending on how a view handles a null personId.
+    const account = await selfSignUp();
+    ok(isPending({ ...account, status: 'active', personId: null }));
+  });
+
+  it('never holds the coordinator pending', async () => {
+    // There is nobody above them to approve it, and the first one is made by
+    // whoever already holds the program file.
+    const admin = await newAccount({ id: 'a', role: 'admin', username: 'coord', secret: 'a long password' });
+    ok(!isPending(admin));
+    ok(!isPending({ ...admin, status: 'pending' }), 'even if a file says otherwise');
+  });
+
+  it('lists everybody waiting, and nobody who is not', async () => {
+    const waiting = await selfSignUp();
+    const settled = await tutorAccount();
+    const turnedOff = { ...await selfSignUp(), id: 'off', username: 'off', disabled: true };
+    const data = { accounts: [waiting, settled, turnedOff] };
+    deepEqual(pendingAccounts(data).map((a) => a.id), ['acct_new']);
+  });
+
+  it('declares only the statuses the app knows how to render', () => {
+    deepEqual([...ACCOUNT_STATUSES], ['pending', 'active']);
   });
 });

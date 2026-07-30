@@ -450,3 +450,12 @@
 
 .mono { font-family: var(--mono); }
 .is-muted { opacity: .55; }
+
+/* The approval queue. Stacks on a phone: a select and two buttons on one
+   line at 375px would put every target under the 44px minimum. */
+.invite-row--pending { flex-direction: column; align-items: stretch; gap: var(--sp-2); }
+.pending-name { font-weight: 600; }
+.pending-act { display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: center; }
+.pending-act .field__input { flex: 1 1 10rem; min-width: 0; }
+
+.tag--warn { background: var(--warn-soft); color: var(--warn); }

@@ -17,7 +17,7 @@
 import { el, viewHead, button, toast } from '../dom.js';
 import { t } from '../i18n.js';
 import { stampInZone } from '../time.js';
-import { generateAccessCode, peopleWithoutAccounts, suggestUsername, CODE_ROLES } from '../auth.js';
+import { generateAccessCode, peopleWithoutAccounts, suggestUsername, pendingAccounts, isPending, CODE_ROLES } from '../auth.js';
 
 export function render(container, { store, navigate }) {
   const data = store.getState();
@@ -30,6 +30,9 @@ export function render(container, { store, navigate }) {
       el('p', { class: 'small', text: t('auth.notSecurity') })
     ),
     data.accounts.length ? null : firstRunPanel(store, repaint),
+    // First: people already waiting on a human. Anything else on this screen
+    // can wait; somebody who signed up cannot see a thing until this is done.
+    data.accounts.length ? pendingPanel(data, store, repaint) : null,
     data.accounts.length ? existingAccounts(data, store, repaint) : null,
     data.accounts.length ? invitePanel(data, store, repaint) : null
   );
@@ -81,6 +84,81 @@ function firstRunPanel(store, repaint) {
 }
 
 /* ------------------------------------------------------------------ *
+ * People who signed themselves up
+ * ------------------------------------------------------------------ */
+
+/**
+ * The approval queue.
+ *
+ * Confirming is one select and one button, because the coordinator doing it
+ * twelve times in a row is the whole reason self sign-up exists. The choices
+ * are filtered to people of the matching role, so a tutor account cannot be
+ * pointed at a student record.
+ */
+function pendingPanel(data, store, repaint) {
+  const waiting = pendingAccounts(data);
+
+  if (!waiting.length) {
+    return el('section', { class: 'card' },
+      el('h2', { class: 'card__title', text: t('auth.admin.pending') }),
+      el('p', { class: 'muted', text: t('auth.admin.pendingNone') })
+    );
+  }
+
+  return el('section', { class: 'card is-primary' },
+    el('h2', { class: 'card__title', text: `${t('auth.admin.pending')} (${waiting.length})` }),
+    el('p', { class: 'muted', text: t('auth.admin.pendingBody') }),
+    el('ul', { class: 'invite-list' }, waiting.map((account) => pendingRow(account, data, store, repaint)))
+  );
+}
+
+function pendingRow(account, data, store, repaint) {
+  const wantedRole = account.role === 'tutor' ? 'tutor' : 'student';
+  const candidates = data.people.filter((p) => p.role === wantedRole && p.active !== false);
+
+  const select = el('select', {
+    class: 'field__input',
+    id: `link-${account.id}`,
+    'aria-label': `${t('auth.admin.linkTo')} ${account.claimedName || account.username}`
+  },
+    el('option', { value: '', text: t('auth.admin.choosePerson') }),
+    ...candidates.map((p) => el('option', { value: p.id, text: p.name }))
+  );
+
+  const confirm = button(t('auth.admin.confirm'), {
+    variant: 'small',
+    onClick: () => {
+      if (!select.value) { select.focus(); return; }
+      try {
+        store.approveAccount(account.id, select.value);
+        toast(t('auth.admin.confirmed'));
+        repaint();
+      } catch (err) {
+        toast(err.message, 'error');
+      }
+    }
+  });
+
+  return el('li', { class: 'invite-row invite-row--pending' },
+    el('div', { class: 'pending-who' },
+      el('span', { class: 'pending-name', text: account.claimedName || account.username }),
+      el('span', { class: 'small faint',
+        text: ` · ${t('auth.admin.signedUpAs')} ${roleLabel(account.role)} · ` }),
+      el('span', { class: 'small mono faint', text: account.username })
+    ),
+    el('div', { class: 'pending-act' },
+      select,
+      confirm,
+      button(t('auth.admin.reject'), {
+        variant: 'small quiet',
+        'aria-label': `${t('auth.admin.reject')} — ${account.username}`,
+        onClick: () => { store.setAccountDisabled(account.id, true); repaint(); }
+      })
+    )
+  );
+}
+
+/* ------------------------------------------------------------------ *
  * Everybody who already has access
  * ------------------------------------------------------------------ */
 
@@ -102,9 +180,10 @@ function existingAccounts(data, store, repaint) {
           const person = account.personId ? byId.get(account.personId) : null;
           return el('tr', { class: account.disabled ? 'is-muted' : '' },
             el('td', {},
-              el('span', { text: person?.name ?? t('chat.roleAdmin') }),
+              el('span', { text: person?.name ?? (account.role === 'admin' ? t('chat.roleAdmin') : (account.claimedName || '—')) }),
               el('span', { class: 'small faint', text: ` · ${roleLabel(account.role)}` }),
-              account.disabled ? el('span', { class: 'tag tag--muted', text: t('auth.admin.disabled') }) : null
+              account.disabled ? el('span', { class: 'tag tag--muted', text: t('auth.admin.disabled') }) : null,
+              isPending(account) ? el('span', { class: 'tag tag--warn', text: t('auth.admin.pendingTag') }) : null
             ),
             el('td', { class: 'mono', text: account.username }),
             el('td', { class: 'small faint', text: account.lastSignInAt

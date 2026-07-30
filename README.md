@@ -66,8 +66,15 @@ before agreeing to add any of them.
 
 Optional, and off until a coordinator turns it on — a program with no accounts
 is never locked, so an update can never strand somebody outside their own
-records. Coordinators and tutors choose a password; **families never create
-anything**, they are handed a short access code and type it once (principle 5).
+records.
+
+Two ways in. The coordinator hands somebody a username and a short code, so a
+**family never has to create anything** (principle 5). Or a person signs
+themselves up — useful when a dozen tutors join at once. A self-created account
+is **pending**: it can sign in and sees one screen saying the coordinator has
+been asked, and nothing else. No roster, no students, no contact details. An
+adult links it to a person on the roster before anything opens up, because with
+no server there is no way to check that somebody claiming to be a tutor is.
 
 Credentials are salted PBKDF2-SHA-256 with the iteration count stored per
 account, so moving to a real backend later means moving where verification
@@ -147,16 +154,16 @@ under the `/evf/` project subpath.
 
 [![tests](https://github.com/calebsuh625/evf/actions/workflows/tests.yml/badge.svg)](https://github.com/calebsuh625/evf/actions/workflows/tests.yml)
 
-**525 tests.** Every push and pull request runs them and fails on a regression.
+**533 tests.** Every push and pull request runs them and fails on a regression.
 
 In a browser: open <http://localhost:8000/tests/test.html>.
 
 Headless:
 
 ```sh
-node tests/run-node.mjs                              # 514 tests, nothing to install
+node tests/run-node.mjs                              # 522 tests, nothing to install
 npm install && npx playwright install chromium
-node tests/run-browser.mjs http://localhost:8000     # all 546
+node tests/run-browser.mjs http://localhost:8000     # all 554
 ```
 
 The Node run needs nothing installed, because the logic modules are deliberately

@@ -81,6 +81,9 @@ export function render(container, { store, navigate }) {
       el('aside', { class: 'notice', role: 'note' },
         el('p', { class: 'small', text: t('auth.forgot') })
       ),
+      el('p', { class: 'small' },
+        el('a', { href: '#/sign-up', text: t('auth.noAccount') })
+      ),
       // The honest footnote. It is not hidden behind a link, because a family
       // deciding whether to type a child's details deserves to read it.
       el('p', { class: 'small faint signin__caveat', text: t('auth.notSecurity') })

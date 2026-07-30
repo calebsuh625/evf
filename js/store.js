@@ -58,9 +58,9 @@ import {
 } from './csv.js';
 import { isValidTimeZone, parseHhMm } from './time.js';
 import { SESSION_CREDIT_MINUTES } from './hours.js';
-import { ACCOUNT_ROLES, newAccount, attemptSignIn, viewAsFor, hasAccounts } from './auth.js';
+import { ACCOUNT_ROLES, ACCOUNT_STATUSES, newAccount, attemptSignIn, viewAsFor, hasAccounts, isPending } from './auth.js';
 
-export const SCHEMA_VERSION = 7;
+export const SCHEMA_VERSION = 8;
 
 const STORAGE_KEY = 'evf.program.v1';
 const LANG_KEY = 'evf.lang';
@@ -300,6 +300,21 @@ export function isLogged(session) {
  * newer. Never edit a shipped migration — add the next one.
  */
 const MIGRATIONS = {
+  /**
+   * 7 -> 8: accounts gain a `status`.
+   *
+   * Every account that already exists was created by the coordinator, who was
+   * looking at the roster when they did it, so all of them are 'active'. Only
+   * accounts somebody creates for themselves start 'pending'.
+   */
+  7(data) {
+    return {
+      ...data,
+      version: 8,
+      accounts: (data.accounts ?? []).map((a) => ({ ...a, status: a.status ?? 'active' }))
+    };
+  },
+
   /**
    * 6 -> 7: adds `accounts`.
    *
@@ -826,9 +841,18 @@ export function validate(data) {
     // A credential with no hash would silently accept anything.
     if (!a.salt || !a.hash) errors.push(`Account "${a.username ?? a.id}" has no stored password.`);
 
-    // The coordinator has no roster row; everyone else must resolve.
-    if (a.role !== 'admin' && !personIds.has(a.personId)) {
+    if (a.status != null && !ACCOUNT_STATUSES.includes(a.status)) {
+      errors.push(`Account "${a.username ?? a.id}" has status "${a.status}"; expected one of ${ACCOUNT_STATUSES.join(', ')}.`);
+    }
+
+    // The coordinator has no roster row, and a pending account has not been
+    // attached to anybody yet. Everyone else must resolve.
+    const unattached = a.role === 'admin' || a.status === 'pending' || a.personId == null;
+    if (!unattached && !personIds.has(a.personId)) {
       errors.push(`Account "${a.username ?? a.id}" points at person "${a.personId}", who is not in this file.`);
+    }
+    if (a.status === 'pending' && a.personId != null) {
+      warnings.push(`Account "${a.username ?? a.id}" is pending but already points at a person.`);
     }
   });
 
@@ -1757,6 +1781,75 @@ export async function createAccount({ personId = null, role, username, secret })
   const account = await newAccount({ id: newId('acct'), personId, role, username, secret });
   update((current) => ({ ...current, accounts: [...current.accounts, account] }));
   return account;
+}
+
+/**
+ * Sign yourself up.
+ *
+ * Always lands 'pending' with no person attached, whatever role is claimed —
+ * the role is a hint for the coordinator, not a grant. See auth.js.
+ */
+export async function signUp({ role, username, secret, claimedName }) {
+  if (role === 'admin') {
+    // Otherwise the first stranger to find the URL is a coordinator.
+    const err = new Error('Ask a coordinator to set up a coordinator account.');
+    err.code = 'role-not-self-serve';
+    throw err;
+  }
+  const taken = state.accounts.some((a) => a.username === String(username ?? '').trim().toLowerCase());
+  if (taken) {
+    const err = new Error('That username is already taken. Try another.');
+    err.code = 'username-taken';
+    throw err;
+  }
+
+  const account = await newAccount({
+    id: newId('acct'), personId: null, role, username, secret,
+    status: 'pending', claimedName
+  });
+  update((current) => ({ ...current, accounts: [...current.accounts, account] }));
+  return account;
+}
+
+/**
+ * Recognise a pending account: say which person on the roster it belongs to.
+ *
+ * The only step that turns a self-created account into one that can see
+ * anybody's details, and it is deliberately a human decision.
+ */
+export function approveAccount(accountId, personId) {
+  const account = state.accounts.find((a) => a.id === accountId);
+  if (!account) {
+    const err = new Error(`No such account: ${accountId}`);
+    err.code = 'no-account';
+    throw err;
+  }
+  const person = state.people.find((p) => p.id === personId);
+  if (!person) {
+    const err = new Error(`No such person: ${personId}`);
+    err.code = 'no-person';
+    throw err;
+  }
+  // A tutor account pointing at a student record would show the wrong screens
+  // to a real person.
+  const wanted = account.role === 'tutor' ? 'tutor' : 'student';
+  if (person.role !== wanted) {
+    const err = new Error(`${person.name} is a ${person.role}, but that account signed up as a ${account.role}.`);
+    err.code = 'role-mismatch';
+    throw err;
+  }
+
+  update((current) => ({
+    ...current,
+    accounts: current.accounts.map((a) => (a.id === accountId
+      ? { ...a, personId, status: 'active' }
+      : a))
+  }));
+}
+
+/** Whether the signed-in account is still waiting to be recognised. */
+export function sessionIsPending(data = state) {
+  return isPending(currentAccount(data));
 }
 
 /** Replace an account's password or access code. */

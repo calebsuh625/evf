@@ -36,14 +36,28 @@
  * teenagers reuse passwords. Salted PBKDF2-SHA-256 at a high iteration count
  * is what a server would store, so it is what is stored here.
  *
- * ── Principle 5 is not suspended for this ────────────────────────────
+ * ── Two ways in, and principle 5 needs both ──────────────────────────
  *
- * Students and guardians **never invent or manage a credential.** No sign-up
- * form, no password rules, no "create your account" step, nothing to forget
- * and reset. The coordinator generates a short access code and hands it over;
- * the family types it once. Requiring a parent in Chengdu to devise a
- * password before they can read their child's homework is exactly the kind of
- * required data entry the program does not do.
+ * **The coordinator hands somebody access.** They generate a username and a
+ * short code and read it out. The family types it once and are never asked to
+ * invent anything, remember anything, or fill in a form. This path must always
+ * exist: requiring a parent in Chengdu to devise a password before they can
+ * read their child's homework is exactly the required data entry the program
+ * does not do.
+ *
+ * **Or somebody signs themselves up.** Useful when twelve tutors join at once
+ * and nobody wants to read out twelve codes. They choose a username, a
+ * password and the name they go by, and the account is created **pending**.
+ *
+ * A pending account can sign in and sees exactly one screen: the coordinator
+ * has been asked. No roster, no students, no contact details, no messages.
+ * That is the entire safeguard for open sign-up, and it has to be, because
+ * with no server there is no way to check that somebody claiming to be a tutor
+ * is that tutor. An adult decides which person on the roster they are, and
+ * only then does anything open up.
+ *
+ * Self sign-up is therefore an addition, never a replacement. The moment it
+ * becomes the only way in, principle 5 is broken.
  */
 
 /**
@@ -55,6 +69,20 @@ export const PBKDF2_ITERATIONS = 210_000;
 
 /** Roles that hold an account. 'guardian' shares the student's person row. */
 export const ACCOUNT_ROLES = Object.freeze(['admin', 'tutor', 'student', 'guardian']);
+
+/**
+ * An account is either waiting to be recognised or in use.
+ *
+ * 'pending' is what somebody who signed themselves up gets. They can sign in,
+ * and they see one screen saying the coordinator has been asked — nothing
+ * else. This is the whole safeguard for open sign-up: with no server there is
+ * no way to check that a person claiming to be a tutor is that tutor, so
+ * nobody reaches a child's contact details until an adult has said which
+ * person on the roster they are.
+ *
+ * 'active' means a coordinator linked the account to a roster entry.
+ */
+export const ACCOUNT_STATUSES = Object.freeze(['pending', 'active']);
 
 /** Roles the coordinator issues an access code to, rather than a password. */
 export const CODE_ROLES = Object.freeze(['student', 'guardian']);
@@ -161,7 +189,7 @@ export function generateAccessCode(groups = 2, size = 4) {
  * `personId` is null for the coordinator, who has no roster row — see the
  * chat module for the same decision.
  */
-export async function newAccount({ id, personId = null, role, username, secret, createdAt }) {
+export async function newAccount({ id, personId = null, role, username, secret, createdAt, status = 'active', claimedName = '' }) {
   if (!ACCOUNT_ROLES.includes(role)) {
     throw new TypeError(`Unknown account role: ${role}`);
   }
@@ -180,6 +208,10 @@ export async function newAccount({ id, personId = null, role, username, secret, 
     salt,
     hash: await hashSecret(secret, salt),
     iterations: PBKDF2_ITERATIONS,
+    status: ACCOUNT_STATUSES.includes(status) ? status : 'pending',
+    /* What they typed when signing themselves up, so the coordinator has
+       something to recognise them by. Never trusted as identity. */
+    claimedName: String(claimedName ?? '').trim(),
     createdAt: createdAt ?? new Date().toISOString(),
     lastSignInAt: null,
     disabled: false
@@ -241,6 +273,24 @@ export function viewAsFor(account) {
   if (account.role === 'admin') return 'admin';
   if (account.role === 'guardian') return `guardian:${account.personId}`;
   return account.personId;
+}
+
+/**
+ * Whether this account has been recognised by a coordinator yet.
+ *
+ * The coordinator's own account is always in use — there is nobody above them
+ * to approve it, and the first one is created by whoever already holds the
+ * program file.
+ */
+export function isPending(account) {
+  if (!account) return false;
+  if (account.role === 'admin') return false;
+  return account.status === 'pending' || !account.personId;
+}
+
+/** Accounts waiting for somebody to say who they are. */
+export function pendingAccounts(data) {
+  return (data?.accounts ?? []).filter((a) => isPending(a) && !a.disabled);
 }
 
 /** Whether anybody has set up sign-in yet. */
