@@ -48,7 +48,13 @@ const KEYS = [
   'placeholder.tag', 'placeholder.body', 'placeholder.willDo', 'placeholder.dataReady',
   'notfound.title', 'notfound.body', 'notfound.action',
   'action.loadSample', 'action.goToData', 'action.viewTutors', 'action.logSession',
-  'count.records', 'integrity.warnings'
+  'count.records', 'integrity.warnings',
+  'footer.selftest',
+  'selftest.title', 'selftest.lede', 'selftest.pass', 'selftest.fail',
+  'selftest.ranIn', 'selftest.rerun', 'selftest.reran', 'selftest.example',
+  'selftest.tutorSide', 'selftest.studentSide', 'selftest.exampleNote',
+  'selftest.expected', 'selftest.actual', 'selftest.passed', 'selftest.failed',
+  'selftest.footnote', 'selftest.nFailing'
 ];
 
 describe('i18n coverage', () => {

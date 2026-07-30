@@ -148,6 +148,29 @@ UTC — 9am Shanghai is a different UTC time depending on whether the US side is
 in DST. `time.js` resolves the second kind into the first against a reference
 week. Read the header comment there before touching any of it.
 
+**The core conversions are `toUtc(localIso, tz)` and `fromUtc(utcIso, tz)`.**
+`toUtc` takes a *naive* wall clock — "2026-06-20T09:00", no `Z`, no offset —
+and throws if given one that carries a zone, because that string is an instant
+and treating it as a local time is the bug this module exists to prevent.
+`fromUtc` returns a wall clock with no suffix, for the same reason.
+
+**`resolveLocal` classifies every local time as normal, ambiguous or
+nonexistent**, by bracketing the naive target with the offsets in force a day
+either side and checking which candidates read back. Ambiguous (the fall-back
+hour, which happens twice) resolves to the FIRST occurrence and reports the
+other. Nonexistent (the spring-forward gap) resolves FORWARD past the gap —
+never backward, because backward moves a booked session an hour *earlier*,
+which is the direction that makes someone miss it.
+
+**Both US transitions land on a Sunday**, which is a tutoring day. That is not
+a hypothetical edge case here.
+
+**`formatDual(utc, tzA, tzB)` computes each side's weekday from a formatter
+bound to that one zone.** Never derive one side's weekday from the other's, and
+never offset-adjust a weekday: Saturday 09:00 in Beijing is *Friday* 18:00 in
+California, so the two sides routinely disagree. There is a scenario pinning
+this, and injecting a shared weekday makes it fail.
+
 **Weekday numbering is 0 = Sunday**, matching `Date#getUTCDay`.
 
 **Availability rows are `{ weekday, startTime, endTime, timezone }`** — a wall
@@ -216,6 +239,28 @@ state, so views call `store.summary()` and tests call `store.summary(fixture)`.
 `unpairedStudents()` counts a **paused** pairing as unpaired: somebody has to
 pick it back up. `tutorsWithCapacity()` respects each tutor's own `maxStudents`
 as a limit they set for themselves, not a target to fill.
+
+## The self-test panel
+
+`#/selftest` runs the timezone assertions in the reader's browser and shows
+pass/fail. It exists to be shown to someone deciding whether to trust the app —
+a club officer cannot read a test suite, but they can read "Saturday 09:00 in
+Beijing is Friday 18:00 in California — checked, passing".
+
+The scenarios live in `js/selftest.js`, which is **the single source of truth**:
+the panel renders them and `tests/time.test.js` imports the same list and
+asserts every one passes. Neither restates an expectation, so they cannot drift.
+
+Each scenario carries a bilingual `title` and `why` as `{ en, zh }` pairs, and
+`runSelfTest({ lang })` resolves them. A scenario added without Chinese fails
+the suite — the panel is exactly the screen a Chinese-side stakeholder would be
+shown, so principle 6 applies to it in full.
+
+Adding a scenario: append to `SCENARIOS` with an `id`, a `category` from
+`CATEGORIES`, bilingual `title`/`why`, and a `run()` returning
+`{ pass, expected, actual, note }` via the `expect`/`expectAll` helpers. Use
+fixed instants only — nothing may call `Date.now()`, or the panel would say
+something different next year.
 
 ## Adding a screen
 

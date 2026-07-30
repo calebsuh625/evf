@@ -35,9 +35,15 @@ configuration — the paths resolve correctly under a project subpath.
 
 ## Tests
 
-Open <http://localhost:8000/tests/test.html>. 235 unit tests covering the
+Open <http://localhost:8000/tests/test.html>. 298 unit tests covering the
 timezone math, the pairing scorer, the hour computation, CSV handling, the
 bilingual dictionary, and the store's migration, validation and export logic.
+
+There is also a **[time zone self-test](#/selftest)** built into the app itself
+— open the running site and follow the link in the footer. It runs the timezone
+assertions in your browser and shows them passing or failing, in plain language,
+in English or Chinese. The timezone math is the part of this app most likely to
+be wrong, so it is the part you can check without reading any code.
 
 They also run headless, because the logic modules are deliberately free of DOM
 code:
@@ -90,7 +96,15 @@ So the app stores two different kinds of time and never confuses them:
   a wall-clock range, and a zone, then resolved into real instants against a
   specific week. Storing these as UTC would silently break twice a year.
 
-Every conversion goes through `js/time.js`, and the DST cases have tests.
+Every conversion goes through `js/time.js`. The two core calls are
+`toUtc(localIso, tz)` and `fromUtc(utcIso, tz)`; passing a `Z`-suffixed instant
+where a local wall clock belongs is an error rather than a guess.
+
+Both US daylight-saving transitions fall on a Sunday, which is a tutoring day.
+One of those Sundays has a local 02:00–03:00 that does not exist, and the other
+has a 01:00–02:00 that happens twice. Both cases are detected and resolved
+deliberately — forward past the gap, and to the first of the two repeats — and
+both have tests and a visible check in the self-test panel.
 
 ## Privacy
 
@@ -122,6 +136,7 @@ js/
   matching.js       pairing scorer     — pure functions, no DOM
   hours.js          hour computation   — pure functions, no DOM
   csv.js            CSV parse/write    — pure functions, no DOM
+  selftest.js       the timezone assertions, as runnable scenarios
   i18n.js           English / Simplified Chinese
   views/            one module per screen
 data/sample.json    committed demo dataset

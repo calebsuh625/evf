@@ -19,6 +19,7 @@ import { render as renderSessions } from './views/sessions.js';
 import { render as renderHours } from './views/hours.js';
 import { render as renderData } from './views/data.js';
 import { render as renderSettings } from './views/settings.js';
+import { render as renderSelfTest } from './views/selftest.js';
 import { render as renderNotFound } from './views/not-found.js';
 
 /**
@@ -33,7 +34,10 @@ const ROUTES = [
   { path: '/sessions', key: 'nav.sessions', nav: true,  render: renderSessions },
   { path: '/hours',    key: 'nav.hours',    nav: true,  render: renderHours },
   { path: '/data',     key: 'nav.data',     nav: true,  render: renderData },
-  { path: '/settings', key: 'nav.settings', nav: true,  render: renderSettings }
+  { path: '/settings', key: 'nav.settings', nav: true,  render: renderSettings },
+  // Reachable from the footer rather than the main nav: it is a proof, not
+  // a screen anyone works in day to day.
+  { path: '/selftest', key: 'selftest.title', nav: false, render: renderSelfTest }
 ];
 
 const NOT_FOUND = { path: null, key: 'notfound.title', render: renderNotFound };
