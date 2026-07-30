@@ -14,7 +14,7 @@
  * Chinese.
  */
 
-import { el, viewHead, button, toast, linkButton } from '../dom.js';
+import { el, viewHead, button, toast, linkButton, mount } from '../dom.js';
 import { t, getLocale } from '../i18n.js';
 import { matchingReport } from '../matching.js';
 
@@ -22,7 +22,7 @@ export function render(container, { store, nowIso }) {
   const data = store.getState();
   const report = matchingReport(data, { referenceIso: nowIso });
 
-  container.append(
+  mount(container, 
     viewHead(t('match.title'), t('match.lede'), [
       el('span', { class: 'badge badge--accent', text: t('match.counts', report.counts) })
     ]),

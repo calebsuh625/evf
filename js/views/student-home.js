@@ -15,7 +15,7 @@
  * demand rather than rendering a year of sessions nobody scrolled to.
  */
 
-import { el, button, toast } from '../dom.js';
+import { el, button, toast, mount } from '../dom.js';
 import { t, getLocale } from '../i18n.js';
 import { formatDual, stampInZone } from '../time.js';
 import { nextClassFor, lastHeldSession } from '../tutor.js';
@@ -40,7 +40,7 @@ export function render(container, { store, student, isGuardian, nowIso }) {
 
   const lastHeld = active ? lastHeldSession(active.id, data.sessions, nowIso) : null;
 
-  container.append(
+  mount(container, 
     el('header', { class: 'st-head' },
       el('h1', { text: t('st.greeting', { name: student.preferredName || student.name }) }),
       el('p', { class: 'small faint', text: t('st.nothingRequired') })

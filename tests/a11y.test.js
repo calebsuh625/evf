@@ -445,3 +445,55 @@ describe('form controls everywhere have names', () => {
     });
   }
 });
+
+/* ---------------------------------------------------------------- *
+ * No stray "null" on any screen
+ *
+ * Native `append` and `replaceChildren` stringify whatever they are handed,
+ * so `container.append(cond ? panel : null)` writes the literal word "null"
+ * onto the page. That has reached users of this app twice — once as
+ * "Total 60 minnull", once as a bare "null" on the accounts screen — because
+ * it is invisible in review and only shows up in the one state where the
+ * condition is false.
+ *
+ * `mount()` in dom.js filters, the way `el()` always has. This sweeps the
+ * rendered pages so the next one gets caught here rather than by a user.
+ * ---------------------------------------------------------------- */
+
+describe('rendered screens', () => {
+  const STRAY_TOKENS = ['null', 'undefined', 'NaN', '[object Object]'];
+
+  const SCREENS = [
+    '#/admin', '#/admin/attention', '#/admin/matching', '#/admin/roster',
+    '#/admin/export', '#/admin/accounts', '#/settings',
+    '#/tutor', '#/tutor/hours', '#/tutor/availability',
+    '#/student', '#/messages', '#/sign-in', '#/sign-up', '#/selftest'
+  ];
+
+  if (!inBrowser) {
+    for (const hash of SCREENS) {
+      it.skip(`renders ${hash} with no stray null or undefined`,
+        'needs a browser: reads what the page actually rendered');
+    }
+    return;
+  }
+
+  for (const hash of SCREENS) {
+    it(`renders ${hash} with no stray null or undefined`, async () => {
+      const frame = await openApp(hash);
+      const text = frame.contentDocument?.body?.innerText ?? '';
+      frame.remove();
+
+      /*
+       * No word boundaries. The first version of this test used them and
+       * missed the real bug: three nulls in a row render as "nullnullnull",
+       * which has no boundary between the repeats and so matches nothing.
+       * A plain substring check is safe here because no string in either
+       * dictionary contains any of these words — there is a test above that
+       * would have to change first.
+       */
+      const strays = STRAY_TOKENS.filter((token) => text.includes(token));
+      deepEqual(strays, [], `${hash} rendered: ${strays.join(', ')}`);
+    });
+  }
+});

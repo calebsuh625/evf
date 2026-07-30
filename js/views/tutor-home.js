@@ -10,7 +10,7 @@
  * deadline, no red badge (principle 3).
  */
 
-import { el, viewHead, linkButton, statCard } from '../dom.js';
+import { el, viewHead, linkButton, statCard, mount } from '../dom.js';
 import { t, getLocale, getLang } from '../i18n.js';
 import { formatDual, stampInZone } from '../time.js';
 import {
@@ -26,19 +26,19 @@ export function render(container, { store, tutor, nowIso }) {
   const name = tutor.preferredName || tutor.name;
   const pairs = tutorPairings(tutor.id, data);
 
-  container.append(
+  mount(container, 
     viewHead(t('tutor.home.greeting', { name }), t('tutor.home.lede'))
   );
 
   if (pairs.length === 0) {
-    container.append(noStudents());
-    container.append(hoursBlock(tutor, data, nowIso));
+    mount(container, noStudents());
+    mount(container, hoursBlock(tutor, data, nowIso));
     return;
   }
 
   const outstanding = outstandingLogs(tutor.id, data, { asOfIso: nowIso });
 
-  container.append(
+  mount(container, 
     nextClassCard(tutor, data, nowIso),
     outstanding.length ? nudge(outstanding, data, nowIso) : null,
     hoursBlock(tutor, data, nowIso),

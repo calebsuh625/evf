@@ -10,7 +10,7 @@
  * an app that has to load from mainland China.
  */
 
-import { el, viewHead, statCard, linkButton, button, toast, withBusy } from '../dom.js';
+import { el, viewHead, statCard, linkButton, button, toast, withBusy, mount } from '../dom.js';
 import { t, getLocale } from '../i18n.js';
 import { programCounts, periodTotals, growthByMonth, attentionReport } from '../admin.js';
 import { lineChart } from '../chart.js';
@@ -19,7 +19,7 @@ export function render(container, { store, nowIso }) {
   const data = store.getState();
 
   if (data.people.length === 0) {
-    container.append(viewHead(t('admin.ov.title'), t('admin.ov.lede')), emptyState(store));
+    mount(container, viewHead(t('admin.ov.title'), t('admin.ov.lede')), emptyState(store));
     return;
   }
 
@@ -28,7 +28,7 @@ export function render(container, { store, nowIso }) {
   const attention = attentionReport(data, { nowIso });
   const growth = growthByMonth(data, { nowIso });
 
-  container.append(
+  mount(container, 
     viewHead(t('admin.ov.title'), t('admin.ov.lede')),
 
     el('div', { class: 'grid' },

@@ -212,6 +212,21 @@ calls `Intl.DateTimeFormat` directly is a bug.
 A missing key logs a warning and falls back to English. English-only text is
 text a student's parent cannot read.
 
+**Never call `node.append()` or `node.replaceChildren()` with a child that
+might be null — use `mount()` from `dom.js`.** Native `append` stringifies
+whatever it is given, so `container.append(cond ? panel : null)` writes the
+literal word "null" onto the page. That has reached users twice: once as
+"Total 60 minnull", once as a bare "null" on the accounts screen. `el()` and
+`mount()` filter; the natives do not. `tests/a11y.test.js` sweeps every screen
+for stray `null`, `undefined`, `NaN` and `[object Object]`.
+
+That sweep is also a lesson in writing the assertion wrong: the first version
+matched `/\bnull\b/`, which cannot catch three nulls in a row — "nullnullnull"
+has no word boundary between the repeats — and it passed against the real bug.
+It now matches plain substrings, which is safe because no string in either
+dictionary contains those words. When adding a check like this, reintroduce
+the bug and watch it fail before believing it.
+
 **`el()` in `dom.js` sets `textContent`, never `innerHTML`.** Session notes are
 typed by a volunteer on a phone and rendered on a coordinator's screen. Keep
 that path incapable of producing markup.

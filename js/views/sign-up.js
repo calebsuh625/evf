@@ -29,7 +29,8 @@ const ROLES = [
 export function render(container, { store, navigate }) {
   const data = store.getState();
 
-  const name = el('input', { id: 'up-name', class: 'field__input', type: 'text', autocomplete: 'name' });
+  const name = el('input', { id: 'up-name', class: 'field__input', type: 'text',
+    autocomplete: 'name', required: true });
   const username = el('input', { id: 'up-user', class: 'field__input', type: 'text',
     autocomplete: 'username', autocapitalize: 'none', autocorrect: 'off', spellcheck: 'false' });
   const secret = el('input', { id: 'up-secret', class: 'field__input', type: 'password',
@@ -48,6 +49,16 @@ export function render(container, { store, navigate }) {
     onSubmit: async (event) => {
       event.preventDefault();
       error.hidden = true;
+
+      // Without this the coordinator gets a row saying "—" and no way to tell
+      // who is asking. It is the one field that has to be filled in, and this
+      // is a form somebody chose to open.
+      if (!name.value.trim()) {
+        error.textContent = t('auth.up.nameRequired');
+        error.hidden = false;
+        name.focus();
+        return;
+      }
 
       // Check the password here rather than letting the store throw, so the
       // message lands under the field it is about.

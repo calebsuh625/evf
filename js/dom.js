@@ -53,6 +53,20 @@ export function append(parent, children) {
   return parent;
 }
 
+/**
+ * Put children into a node, skipping the empty ones.
+ *
+ * Use this instead of `node.append(...)` anywhere a child can be conditional.
+ * Native `append` and `replaceChildren` stringify whatever they are given, so
+ * `node.append(cond ? panel : null)` renders the literal text "null" on the
+ * page — a bug that has reached users of this app twice. `el()` has always
+ * filtered its children; this is the same courtesy for a node you already
+ * have. `tests/dom.test.js` pins it.
+ */
+export function mount(node, ...children) {
+  return append(node, children);
+}
+
 export function clear(node) {
   node.replaceChildren();
   return node;

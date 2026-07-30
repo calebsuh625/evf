@@ -14,7 +14,7 @@
  * They appear as people the coordinator can hand a code to (principle 5).
  */
 
-import { el, viewHead, button, toast } from '../dom.js';
+import { el, viewHead, button, toast, mount } from '../dom.js';
 import { t } from '../i18n.js';
 import { stampInZone } from '../time.js';
 import { generateAccessCode, peopleWithoutAccounts, suggestUsername, pendingAccounts, isPending, CODE_ROLES } from '../auth.js';
@@ -23,7 +23,7 @@ export function render(container, { store, navigate }) {
   const data = store.getState();
   const repaint = () => { container.replaceChildren(); render(container, { store, navigate }); };
 
-  container.append(
+  mount(container, 
     viewHead(t('auth.admin.title'), t('auth.admin.lede')),
     el('aside', { class: 'notice notice--warn', role: 'note' },
       el('p', { class: 'notice__title', text: t('auth.notSecurityTitle') }),
@@ -143,8 +143,9 @@ function pendingRow(account, data, store, repaint) {
     el('div', { class: 'pending-who' },
       el('span', { class: 'pending-name', text: account.claimedName || account.username }),
       el('span', { class: 'small faint',
-        text: ` · ${t('auth.admin.signedUpAs')} ${roleLabel(account.role)} · ` }),
-      el('span', { class: 'small mono faint', text: account.username })
+        text: `${t('auth.admin.signedUpAs')} ${roleLabel(account.role)}` }),
+      // Only worth showing when it is not already the name above it.
+      account.claimedName ? el('span', { class: 'small mono faint', text: account.username }) : null
     ),
     el('div', { class: 'pending-act' },
       select,
@@ -178,10 +179,24 @@ function existingAccounts(data, store, repaint) {
         )),
         el('tbody', {}, data.accounts.map((account) => {
           const person = account.personId ? byId.get(account.personId) : null;
+          const role = roleLabel(account.role);
+          /*
+           * Falls back through the roster name, the name they typed, and then
+           * the username — so this cell always says something a human can act
+           * on. The coordinator has no roster row and no typed name, so they
+           * fall back to their role rather than to a lowercase username that
+           * would then read "coordinator · Coordinator".
+           */
+          const who = person?.name
+            || account.claimedName
+            || (account.role === 'admin' ? role : account.username);
+
           return el('tr', { class: account.disabled ? 'is-muted' : '' },
-            el('td', {},
-              el('span', { text: person?.name ?? (account.role === 'admin' ? t('chat.roleAdmin') : (account.claimedName || '—')) }),
-              el('span', { class: 'small faint', text: ` · ${roleLabel(account.role)}` }),
+            el('td', { class: 'who-cell' },
+              el('span', { text: who }),
+              // The coordinator's name *is* their role, and "Coordinator ·
+              // Coordinator" reads like a bug.
+              who === role ? null : el('span', { class: 'small faint', text: role }),
               account.disabled ? el('span', { class: 'tag tag--muted', text: t('auth.admin.disabled') }) : null,
               isPending(account) ? el('span', { class: 'tag tag--warn', text: t('auth.admin.pendingTag') }) : null
             ),

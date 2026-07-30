@@ -459,3 +459,8 @@
 .pending-act .field__input { flex: 1 1 10rem; min-width: 0; }
 
 .tag--warn { background: var(--warn-soft); color: var(--warn); }
+
+/* Name, role and any tags on one line with real gaps — they used to run
+   together as "TutorWaiting". */
+.who-cell { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); }
+.pending-who { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--sp-2); }
