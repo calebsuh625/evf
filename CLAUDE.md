@@ -470,6 +470,61 @@ If a coordinator genuinely cannot run the program without one of these, the
 problem is the size of the program or the number of coordinators, and the fix
 is not in this codebase.
 
+## Accessibility and polish, as enforced rules
+
+`tests/a11y.test.js` checks these against what the browser computed, not what
+the source looks like. It needs a browser and reports as skipped in Node.
+
+**Contrast is measured, not eyeballed.** The test parses the live stylesheet —
+both `:root` and the `prefers-color-scheme: dark` block — and asserts every
+foreground/background pair the app renders clears 4.5:1. This caught
+`--ink-faint` at 3.25:1 on `--paper-3`, and `#c33` at 3.50:1 on the dark
+background. There is now one `--danger` family so nothing hard-codes a red
+that only works in one theme.
+
+**Never remove a focus ring.** A test fails the build if any `:focus` rule sets
+`outline: none`. It caught `.app-main:focus`, which left skip-link users with
+no idea where they had landed.
+
+**A short visible label is not an accessible name.** The log chips read "30",
+"60", "None", "15" — and those repeat across three groups. Reading the real
+accessibility tree showed a screen reader announcing "button 30 … button 30"
+for two different questions. Each chip now carries an `aria-label` combining
+its group and value ("Prep 15 min"), and a test fails on any two chips sharing
+a name.
+
+**A placeholder is never a label.** The covered field used last session's notes
+as its placeholder, which made an empty field read as though it had a value.
+It is now a real `label[for]` plus a hint element referenced by
+`aria-describedby`, and a test asserts the accessible name is not the
+placeholder.
+
+**Touch targets grow on a coarse pointer.** Measured on a real phone viewport,
+the small buttons, nav links and header controls were landing at 34–39px. A
+`@media (pointer: coarse)` rule takes everything interactive to 44px.
+
+**Every date carries its zone.** `stampInZone` exists so no screen shows a bare
+date: a tutor in California and a student in Beijing read the same instant on
+different days, and an unlabelled date invites each to read it as their own.
+
+**Views load on demand.** Routes use dynamic `import()` — native to ES modules,
+so still no build step. A student on a phone no longer downloads the admin
+dashboards, the matcher and the chart module to read their homework: 9 modules
+instead of 28, and 60 KB of JS gzipped instead of 114 KB.
+
+**Every async action goes through `withBusy`.** The control disables and says
+what it is doing, failures surface the real message rather than a generic
+apology, and the control always comes back — a button stuck disabled after an
+error is worse than the error.
+
+**Language is stored per person.** `evf.lang:<viewAs>`, so a coordinator
+handing their phone to a parent does not have to re-pick the language, and a
+student's Chinese default is not overwritten by an admin choosing English.
+
+An honest limit: these tests read the accessibility tree, which is what a
+screen reader consumes. That is not the same as listening to VoiceOver or NVDA,
+and does not replace doing so before a real launch.
+
 ## The self-test panel
 
 `#/selftest` runs the timezone assertions in the reader's browser and shows

@@ -14,7 +14,7 @@
 
 import { el, button, toast, linkButton, clear } from '../dom.js';
 import { t, getLocale } from '../i18n.js';
-import { formatInZone, dateKeyInZone } from '../time.js';
+import { stampInZone } from '../time.js';
 import { personHistory } from '../admin.js';
 import { toRoundedHours, formatHours } from '../hours.js';
 
@@ -196,7 +196,7 @@ function historySection(history, data, person, tz, locale) {
           text: other(pairing)?.name ?? '—'
         }),
         pairing.startedAt
-          ? el('span', { class: 'faint', text: ` · ${dateKeyInZone(pairing.startedAt, tz)}` })
+          ? el('span', { class: 'faint', text: ` · ${stampInZone(pairing.startedAt, tz, { locale })}` })
           : null
       )
     )),
@@ -205,7 +205,7 @@ function historySection(history, data, person, tz, locale) {
     el('ol', { class: 'history' }, history.sessions.slice(0, 40).map((session) =>
       el('li', { class: `history__item${session.occurred === true ? '' : ' is-missed'}` },
         el('div', { class: 'history__when' },
-          el('span', { class: 'history__date', text: dateKeyInZone(session.scheduledAt, tz) })
+          el('span', { class: 'history__date', text: stampInZone(session.scheduledAt, tz, { locale }) })
         ),
         el('div', { class: 'history__body' },
           session.occurred === true

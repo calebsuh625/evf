@@ -13,7 +13,7 @@
 
 import { el, linkButton } from '../dom.js';
 import { t, getLocale } from '../i18n.js';
-import { formatDual, formatInZone, dateKeyInZone } from '../time.js';
+import { formatDual, stampInZone } from '../time.js';
 import { computeHours, toRoundedHours, formatHours } from '../hours.js';
 import { sharedWindows } from '../tutor.js';
 
@@ -82,7 +82,7 @@ function aboutCard(student, pairing, tutor, data, locale, nowIso) {
       row(t('tutor.student.timezone'), student.timezone),
       pairing.startedAt
         ? row(t('tutor.student.pairedSince'),
-            formatInZone(pairing.startedAt, tutor.timezone, { locale, date: true }))
+            stampInZone(pairing.startedAt, tutor.timezone, { locale }))
         : null
     ),
 
@@ -159,7 +159,7 @@ function historyItem(session, student, tutor, locale) {
 
   return el('li', { class: `history__item${held ? '' : ' is-missed'}` },
     el('div', { class: 'history__when' },
-      el('span', { class: 'history__date', text: dateKeyInZone(session.scheduledAt, tutor.timezone) }),
+      el('span', { class: 'history__date', text: stampInZone(session.scheduledAt, tutor.timezone, { locale }) }),
       el('span', { class: 'small faint', text: `${dual.a.weekdayLabel} · ${dual.a.time} / ${dual.b.time}` })
     ),
 

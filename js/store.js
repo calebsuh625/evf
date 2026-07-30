@@ -1632,17 +1632,30 @@ export function currentStudent(data = state, viewAs = loadViewAs()) {
  * Language preference — a UI setting, but it belongs with persistence
  * ------------------------------------------------------------------ */
 
-export function loadLangPreference() {
+/**
+ * Language preference, stored per person.
+ *
+ * A coordinator handing their phone to a student's parent, or a tutor and a
+ * student sharing a machine at a school, should not have to re-pick the
+ * language every time. The key is scoped to whoever is selected, so each
+ * person's choice sticks to them.
+ */
+function langKeyFor(viewAs = loadViewAs()) {
+  return `${LANG_KEY}:${viewAs || 'admin'}`;
+}
+
+export function loadLangPreference(viewAs) {
   try {
-    return localStorage.getItem(LANG_KEY);
+    // Fall back to the old unscoped key so an existing choice is not lost.
+    return localStorage.getItem(langKeyFor(viewAs)) ?? localStorage.getItem(LANG_KEY);
   } catch {
     return null;
   }
 }
 
-export function saveLangPreference(lang) {
+export function saveLangPreference(lang, viewAs) {
   try {
-    localStorage.setItem(LANG_KEY, lang);
+    localStorage.setItem(langKeyFor(viewAs), lang);
   } catch { /* a preference is not worth an error */ }
 }
 

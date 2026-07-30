@@ -17,7 +17,7 @@
 
 import { el, viewHead, button, toast } from '../dom.js';
 import { t, getLocale } from '../i18n.js';
-import { formatDual, formatInZone } from '../time.js';
+import { formatDual, stampInZone } from '../time.js';
 import { lastHeldSession, nextClassFor } from '../tutor.js';
 
 const DURATIONS = [30, 60];
@@ -110,19 +110,29 @@ export function render(container, { store, tutor, params, query, navigate, nowIs
 
   details.append(
     chipGroup(t('tutor.log.duration'),
-      DURATIONS.map((n) => ({ value: n, label: `${n}` })),
+      DURATIONS.map((n) => ({ value: n, label: `${n}`, spoken: t('tutor.log.minutes', { n }) })),
       () => form.durationMinutes, (v) => { form.durationMinutes = v; refresh(); }),
 
     chipGroup(t('tutor.log.prep'),
-      PREPS.map((n) => ({ value: n, label: n === 0 ? t('tutor.log.none') : `${n}` })),
+      PREPS.map((n) => ({
+        value: n,
+        label: n === 0 ? t('tutor.log.none') : `${n}`,
+        spoken: n === 0 ? t('tutor.log.none') : t('tutor.log.minutes', { n })
+      })),
       () => form.prepMinutes, (v) => { form.prepMinutes = v; refresh(); }),
 
     chipGroup(t('tutor.log.followup'),
-      FOLLOWUPS.map((n) => ({ value: n, label: n === 0 ? t('tutor.log.none') : `${n}` })),
+      FOLLOWUPS.map((n) => ({
+        value: n,
+        label: n === 0 ? t('tutor.log.none') : `${n}`,
+        spoken: n === 0 ? t('tutor.log.none') : t('tutor.log.minutes', { n })
+      })),
       () => form.followupMinutes, (v) => { form.followupMinutes = v; refresh(); }),
 
     textLine(t('tutor.log.covered'), form.covered, (v) => { form.covered = v; },
-      target.lastSession?.covered),
+      target.lastSession?.covered
+        ? t('tutor.log.lastTime', { text: target.lastSession.covered })
+        : t('tutor.log.coveredHint')),
 
     textLine(`${t('tutor.log.homework')} · ${t('tutor.log.optional')}`, form.homework,
       (v) => { form.homework = v; })
@@ -143,7 +153,7 @@ function header(student, target, tutor, locale) {
       el('p', { class: 'log-head__sub small muted' },
         t('tutor.log.with', { name: student.preferredName || student.name }),
         ' · ',
-        `${dual.a.weekdayLabel} ${formatInZone(target.scheduledAt, tutor.timezone, { locale, date: true })}`
+        stampInZone(target.scheduledAt, tutor.timezone, { locale, weekday: true })
       )
     )
   );
@@ -152,6 +162,13 @@ function header(student, target, tutor, locale) {
 /**
  * A row of chips. Each is a real button with aria-pressed, so it works with a
  * keyboard and a screen reader as well as a thumb.
+ *
+ * Each chip carries an explicit aria-label combining its group and its value.
+ * The visible text has to stay short enough for a thumb — "30", "None" — but
+ * those labels repeat across groups, and reading the accessibility tree showed
+ * a screen reader announcing "button 30 … button 30" for two entirely
+ * different questions. The group's own label is not reliably announced with
+ * each button, so each button says what it means.
  */
 function chipGroup(label, options, get, set, extraClass = '') {
   const row = el('div', { class: `log-chips ${extraClass}`, role: 'group', 'aria-label': label });
@@ -161,6 +178,7 @@ function chipGroup(label, options, get, set, extraClass = '') {
       type: 'button',
       class: 'chip',
       text: option.label,
+      'aria-label': `${label} ${option.spoken ?? option.label}`,
       'aria-pressed': String(get() === option.value),
       onClick: () => {
         set(option.value);
@@ -178,20 +196,36 @@ function chipGroup(label, options, get, set, extraClass = '') {
   );
 }
 
-function textLine(label, value, set, placeholder) {
+let fieldSeq = 0;
+
+/**
+ * A single-line field.
+ *
+ * The label is associated by id rather than only by wrapping, and the hint
+ * sits in its own element referenced by aria-describedby. Putting last
+ * session's notes in the placeholder — as this did — makes the field read as
+ * though it already has a value, and a placeholder is never a substitute for
+ * a label.
+ */
+function textLine(label, value, set, hint) {
+  const id = `log-field-${++fieldSeq}`;
+  const hintId = hint ? `${id}-hint` : null;
+
   const input = el('input', {
+    id,
     type: 'text',
     class: 'log-input',
     value,
-    placeholder: placeholder ? `${placeholder}` : '',
     enterkeyhint: 'done',
     autocomplete: 'off',
+    'aria-describedby': hintId,
     onInput: (e) => set(e.target.value)
   });
 
-  return el('label', { class: 'log-field' },
-    el('span', { class: 'log-field__label', text: label }),
-    input
+  return el('div', { class: 'log-field' },
+    el('label', { class: 'log-field__label', for: id, text: label }),
+    input,
+    hint ? el('span', { class: 'log-field__hint', id: hintId, text: hint }) : null
   );
 }
 

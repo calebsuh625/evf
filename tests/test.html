@@ -17,7 +17,7 @@
   }
   .summary strong { font-size: 1.5rem; font-variant-numeric: tabular-nums; }
   .summary[data-state="pass"] { border-left: 4px solid var(--good); }
-  .summary[data-state="fail"] { border-left: 4px solid #a33; }
+  .summary[data-state="fail"] { border-left: 4px solid var(--danger); }
   .summary[data-state="running"] { border-left: 4px solid var(--accent); }
 
   .suite { margin-bottom: 20px; }
@@ -30,8 +30,8 @@
   .case { display: flex; gap: 10px; padding: 5px 0; font-size: .9375rem; }
   .case__mark { flex: none; width: 1.2em; font-weight: 700; text-align: center; }
   .case--pass .case__mark { color: var(--good); }
-  .case--fail .case__mark { color: #c33; }
-  .case--fail { color: #c33; }
+  .case--fail .case__mark { color: var(--danger); }
+  .case--fail { color: var(--danger); }
   .case--skip { color: var(--ink-faint); }
   .case__reason { color: var(--ink-faint); font-size: .8125rem; }
   .case__body { min-width: 0; }
@@ -77,6 +77,7 @@ await import('./tutor.test.js');
 await import('./admin.test.js');
 await import('./i18n.test.js');
 await import('./assets.test.js');
+await import('./a11y.test.js');
 
 const results = document.getElementById('results');
 const summary = document.getElementById('summary');

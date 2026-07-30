@@ -10,7 +10,7 @@
  * an app that has to load from mainland China.
  */
 
-import { el, viewHead, statCard, linkButton, button, toast } from '../dom.js';
+import { el, viewHead, statCard, linkButton, button, toast, withBusy } from '../dom.js';
 import { t, getLocale } from '../i18n.js';
 import { programCounts, periodTotals, growthByMonth, attentionReport } from '../admin.js';
 import { lineChart } from '../chart.js';
@@ -225,16 +225,13 @@ function sessionsChart(chart) {
 function emptyState(store) {
   const load = button(t('action.loadSample'), {
     variant: 'primary',
-    onClick: async () => {
-      load.disabled = true;
-      try {
+    onClick: () => withBusy(load, {
+      busyLabel: t('busy.loading'),
+      run: async () => {
         await store.loadSampleData();
         toast(t('toast.sampleLoaded'));
-      } catch (err) {
-        toast(err.message.split('\n')[0], 'error');
-        load.disabled = false;
       }
-    }
+    })
   });
 
   return el('section', { class: 'empty' },

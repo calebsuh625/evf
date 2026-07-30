@@ -18,7 +18,7 @@
 
 import { el, viewHead, linkButton } from '../dom.js';
 import { t, getLocale } from '../i18n.js';
-import { formatInZone, dateKeyInZone } from '../time.js';
+import { stampInZone } from '../time.js';
 import { attentionReport } from '../admin.js';
 
 const QUIET_WEEKS = 2;
@@ -102,7 +102,7 @@ function quietSection(quiet, tz, locale) {
         ),
         el('p', { class: 'small muted', text: neverMet
           ? t('admin.att.quiet.never')
-          : t('admin.att.quiet.lastMet', { date: dateKeyInZone(lastSessionIso, tz) }) }),
+          : t('admin.att.quiet.lastMet', { date: stampInZone(lastSessionIso, tz, { locale }) }) }),
         contactLine(tutor),
         contactLine(student)
       )
@@ -176,8 +176,8 @@ function capacitySection(capacity) {
 function missesSection(misses, tz, locale) {
   const rows = misses.map(({ session, tutor, student, note }) =>
     el('li', { class: 'attention-row' },
-      el('span', { class: 'attention-row__lead tnum',
-        text: dateKeyInZone(session.scheduledAt, tz) }),
+      el('span', { class: 'attention-row__lead',
+        text: stampInZone(session.scheduledAt, tz, { locale }) }),
       el('div', { class: 'attention-row__body' },
         el('div', { class: 'attention-row__who' },
           personLink(tutor), el('span', { class: 'faint', text: ' · ' }), personLink(student)

@@ -74,12 +74,7 @@
 .kv dt { color: var(--ink-soft); }
 .kv dd { margin: 0; font-variant-numeric: tabular-nums; }
 
-.danger-zone {
-  border-color: #e3bdbd;
-}
-@media (prefers-color-scheme: dark) {
-  .danger-zone { border-color: #4d2a2a; }
-}
+.danger-zone { border-color: var(--danger-line); }
 
 /* Self-test panel (#/selftest) */
 
@@ -94,11 +89,7 @@
   box-shadow: var(--shadow);
 }
 .selftest-verdict.is-pass { background: var(--good-soft); border-left: 4px solid var(--good); }
-.selftest-verdict.is-fail { background: #fdf2f2; border-left: 4px solid #a33; }
-@media (prefers-color-scheme: dark) {
-  .selftest-verdict.is-fail { background: #2a1a1a; }
-}
-
+.selftest-verdict.is-fail { background: var(--danger-soft); border-left: 4px solid var(--danger); }
 .selftest-verdict__mark {
   flex: none;
   display: grid;
@@ -110,7 +101,7 @@
   background: var(--paper);
 }
 .selftest-verdict.is-pass .selftest-verdict__mark { color: var(--good); }
-.selftest-verdict.is-fail .selftest-verdict__mark { color: #c33; }
+.selftest-verdict.is-fail .selftest-verdict__mark { color: var(--danger); }
 .selftest-verdict__headline { margin: 0 0 2px; font-size: 1.25rem; }
 
 /* The headline example: one instant, two clocks */
@@ -172,7 +163,7 @@
 
 .selftest-row__mark { flex: none; width: 1.1em; font-weight: 700; text-align: center; }
 .selftest-row__mark.is-pass { color: var(--good); }
-.selftest-row__mark.is-fail { color: #c33; }
+.selftest-row__mark.is-fail { color: var(--danger); }
 .selftest-row__title { font-size: .9375rem; }
 
 .selftest-row__detail {
@@ -186,7 +177,7 @@
   font-size: .8125rem;
   overflow-wrap: anywhere;
 }
-.selftest-row__value.is-wrong { color: #c33; font-weight: 600; }
+.selftest-row__value.is-wrong { color: var(--danger); font-weight: 600; }
 
 .selftest-footnote { margin-top: var(--sp-5); }
 

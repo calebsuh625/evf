@@ -525,3 +525,12 @@ body[data-role="tutor"] .role-picker__select {
   .person-head__actions { margin-left: 0; width: 100%; }
   .attention-row__lead { min-width: 0; }
 }
+
+/* The hint under a log field — last session's notes, or what to write. */
+.log-field__hint {
+  font-size: .75rem;
+  color: var(--ink-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

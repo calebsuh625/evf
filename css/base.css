@@ -3,7 +3,9 @@
 :root {
   --ink:        #14181f;
   --ink-soft:   #4d5665;
-  --ink-faint:  #7b8494;
+  /* Darkened from #7b8494, which measured 3.25:1 on --paper-3 and so failed
+     WCAG AA for normal text. This clears 4.5:1 on every surface it is used on. */
+  --ink-faint:  #656c79;
   --paper:      #ffffff;
   --paper-2:    #f5f6f8;
   --paper-3:    #eceef2;
@@ -15,6 +17,12 @@
   --good-soft:  #e6f2ec;
   --warn:       #8a5a00;
   --warn-soft:  #fbf0da;
+  /* One danger family, so nothing hard-codes a red that only works in one
+     theme — #c33 measured 3.50:1 on the dark background. */
+  --danger:     #cc3333;
+  --danger-ink: #8a1c1c;
+  --danger-soft:#fdf2f2;
+  --danger-line:#e3bdbd;
 
   --r-sm: 4px;
   --r-md: 8px;
@@ -39,7 +47,7 @@
   :root {
     --ink:        #e7eaef;
     --ink-soft:   #a9b2c0;
-    --ink-faint:  #7d8695;
+    --ink-faint:  #87909d;
     --paper:      #14171c;
     --paper-2:    #1a1e25;
     --paper-3:    #23282f;
@@ -51,6 +59,10 @@
     --good-soft:  #17261f;
     --warn:       #d8b06a;
     --warn-soft:  #2a2317;
+    --danger:     #f0a9a9;
+    --danger-ink: #f0a9a9;
+    --danger-soft:#2a1a1a;
+    --danger-line:#4d2a2a;
     --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 4px 14px rgba(0, 0, 0, .3);
   }
 }

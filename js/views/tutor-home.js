@@ -12,7 +12,7 @@
 
 import { el, viewHead, linkButton, statCard } from '../dom.js';
 import { t, getLocale, getLang } from '../i18n.js';
-import { formatDual, formatInZone } from '../time.js';
+import { formatDual, stampInZone } from '../time.js';
 import {
   nextClassOverall,
   tutorPairings,
@@ -148,8 +148,8 @@ function nudge(outstanding, data, nowIso) {
       outstanding.map(({ session, pairing, student }) =>
         el('li', { class: 'nudge__item' },
           el('span', { class: 'nudge__when', text:
-            formatInZone(session.scheduledAt, byId.get(pairing.tutorId)?.timezone ?? 'UTC',
-              { locale, weekday: true, date: true }) }),
+            stampInZone(session.scheduledAt, byId.get(pairing.tutorId)?.timezone ?? 'UTC',
+              { locale, weekday: true }) }),
           el('span', { class: 'nudge__who', text: student?.preferredName || student?.name || '' }),
           linkButton(t('tutor.nudge.log'), `#/tutor/log/${encodeURIComponent(pairing.id)}?session=${encodeURIComponent(session.id)}`, 'sm')
         )
@@ -231,7 +231,7 @@ function studentTile(card, tutor, locale) {
       el('div', { class: 'clock__zone', text: t('tutor.students.lastSession') }),
       lastSession
         ? el('p', { class: 'small' },
-            formatInZone(lastSession.scheduledAt, tutor.timezone, { locale, date: true, weekday: true }))
+            stampInZone(lastSession.scheduledAt, tutor.timezone, { locale, weekday: true }))
         : el('p', { class: 'small faint', text: t('tutor.students.never') })
     ),
 

@@ -13,21 +13,15 @@ import {
 } from './i18n.js';
 import { el, clear, toast } from './dom.js';
 
-import { render as renderAdminOverview } from './views/admin-overview.js';
-import { render as renderAdminAttention } from './views/admin-attention.js';
-import { render as renderAdminRoster } from './views/admin-roster.js';
-import { render as renderAdminPerson } from './views/admin-person.js';
-import { render as renderAdminExport } from './views/admin-export.js';
-import { render as renderSettings } from './views/settings.js';
-import { render as renderSelfTest } from './views/selftest.js';
-import { render as renderTutorHome } from './views/tutor-home.js';
-import { render as renderTutorLog } from './views/tutor-log.js';
-import { render as renderTutorHours } from './views/tutor-hours.js';
-import { render as renderTutorStudent } from './views/tutor-student.js';
-import { render as renderTutorAvailability } from './views/tutor-availability.js';
-import { render as renderMatching } from './views/matching.js';
-import { render as renderStudentHome } from './views/student-home.js';
-import { render as renderNotFound } from './views/not-found.js';
+/*
+ * Views load on demand.
+ *
+ * Static imports would make every visitor download every screen — a student on
+ * a phone in China pulling the admin dashboards, the matcher and the chart
+ * module before they can read their homework. Dynamic import is native to ES
+ * modules, so this costs no build step, and the browser caches each module
+ * after its first use.
+ */
 
 /**
  * The route table is the app's map.
@@ -41,31 +35,31 @@ import { render as renderNotFound } from './views/not-found.js';
  */
 const ROUTES = [
   // Coordinator. Everything on these screens is computed — see js/admin.js.
-  { path: '/',                key: 'admin.nav.overview',  nav: [],        render: renderAdminOverview },
-  { path: '/admin',           key: 'admin.nav.overview',  nav: ['admin'], render: renderAdminOverview },
-  { path: '/admin/attention', key: 'admin.nav.attention', nav: ['admin'], render: renderAdminAttention },
-  { path: '/admin/matching',  key: 'match.nav',           nav: ['admin'], render: renderMatching },
-  { path: '/admin/roster',    key: 'admin.nav.roster',    nav: ['admin'], render: renderAdminRoster },
-  { path: '/admin/roster/:personId', key: 'admin.nav.roster', nav: [],    render: renderAdminPerson },
-  { path: '/admin/export',    key: 'admin.nav.export',    nav: ['admin'], render: renderAdminExport },
-  { path: '/settings',        key: 'nav.settings',        nav: ['admin'], render: renderSettings },
+  { path: '/',                key: 'admin.nav.overview',  nav: [],        load: () => import('./views/admin-overview.js') },
+  { path: '/admin',           key: 'admin.nav.overview',  nav: ['admin'], load: () => import('./views/admin-overview.js') },
+  { path: '/admin/attention', key: 'admin.nav.attention', nav: ['admin'], load: () => import('./views/admin-attention.js') },
+  { path: '/admin/matching',  key: 'match.nav',           nav: ['admin'], load: () => import('./views/matching.js') },
+  { path: '/admin/roster',    key: 'admin.nav.roster',    nav: ['admin'], load: () => import('./views/admin-roster.js') },
+  { path: '/admin/roster/:personId', key: 'admin.nav.roster', nav: [],    load: () => import('./views/admin-person.js') },
+  { path: '/admin/export',    key: 'admin.nav.export',    nav: ['admin'], load: () => import('./views/admin-export.js') },
+  { path: '/settings',        key: 'nav.settings',        nav: ['admin'], load: () => import('./views/settings.js') },
 
   // Tutor
-  { path: '/tutor',                   key: 'tutor.nav.home',         nav: ['tutor'], role: 'tutor', render: renderTutorHome },
-  { path: '/tutor/hours',             key: 'tutor.nav.hours',        nav: ['tutor'], role: 'tutor', render: renderTutorHours },
-  { path: '/tutor/availability',      key: 'tutor.nav.availability', nav: ['tutor'], role: 'tutor', render: renderTutorAvailability },
-  { path: '/tutor/log/:pairingId',    key: 'tutor.log.title',        nav: [],        role: 'tutor', render: renderTutorLog, screen: 'tutor-log' },
-  { path: '/tutor/student/:studentId', key: 'tutor.student.title',   nav: [],        role: 'tutor', render: renderTutorStudent },
+  { path: '/tutor',                   key: 'tutor.nav.home',         nav: ['tutor'], role: 'tutor', load: () => import('./views/tutor-home.js') },
+  { path: '/tutor/hours',             key: 'tutor.nav.hours',        nav: ['tutor'], role: 'tutor', load: () => import('./views/tutor-hours.js') },
+  { path: '/tutor/availability',      key: 'tutor.nav.availability', nav: ['tutor'], role: 'tutor', load: () => import('./views/tutor-availability.js') },
+  { path: '/tutor/log/:pairingId',    key: 'tutor.log.title',        nav: [],        role: 'tutor', load: () => import('./views/tutor-log.js'), screen: 'tutor-log' },
+  { path: '/tutor/student/:studentId', key: 'tutor.student.title',   nav: [],        role: 'tutor', load: () => import('./views/tutor-student.js') },
 
   // Student and guardian
-  { path: '/student', key: 'st.nav.home', nav: ['student', 'guardian'], role: 'student', render: renderStudentHome },
+  { path: '/student', key: 'st.nav.home', nav: ['student', 'guardian'], role: 'student', load: () => import('./views/student-home.js') },
 
   // Reachable from the footer rather than the main nav: it is a proof, not
   // a screen anyone works in day to day.
-  { path: '/selftest', key: 'selftest.title', nav: [], render: renderSelfTest }
+  { path: '/selftest', key: 'selftest.title', nav: [], load: () => import('./views/selftest.js') }
 ];
 
-const NOT_FOUND = { path: null, key: 'notfound.title', render: renderNotFound };
+const NOT_FOUND = { path: null, key: 'notfound.title', load: () => import('./views/not-found.js') };
 
 /* ------------------------------------------------------------------ *
  * Routing
@@ -210,9 +204,13 @@ function renderRolePicker() {
   mount.append(select);
 }
 
-function renderRoute({ scrollToTop = true } = {}) {
+/** Guards against a slow module landing after the user has moved on. */
+let renderToken = 0;
+
+async function renderRoute({ scrollToTop = true } = {}) {
   const container = document.getElementById('view');
   if (!container) return;
+  const token = ++renderToken;
 
   const { path, params: query } = parseHash(location.hash);
   const { route, params } = matchRoute(path);
@@ -236,8 +234,21 @@ function renderRoute({ scrollToTop = true } = {}) {
     return;
   }
 
+  // Only show a placeholder if the module is genuinely slow to arrive; on a
+  // warm cache it resolves in the same tick and a flash would be worse than
+  // nothing.
+  const pending = setTimeout(() => {
+    if (token === renderToken) container.append(loadingState());
+  }, 250);
+
   try {
-    route.render(container, {
+    const module = await route.load();
+    clearTimeout(pending);
+    // The user navigated again while this was in flight.
+    if (token !== renderToken) return;
+    clear(container);
+
+    module.render(container, {
       params,
       query,
       navigate,
@@ -249,7 +260,10 @@ function renderRoute({ scrollToTop = true } = {}) {
       nowIso: new Date().toISOString()
     });
   } catch (err) {
+    clearTimeout(pending);
+    if (token !== renderToken) return;
     console.error(`[app] ${path} failed to render`, err);
+    clear(container);
     container.append(renderRenderError(err));
   }
 
@@ -260,6 +274,14 @@ function renderRoute({ scrollToTop = true } = {}) {
   renderRolePicker();
   renderNav();
   if (scrollToTop) window.scrollTo({ top: 0 });
+}
+
+/** Shown only when a view module takes long enough that silence would confuse. */
+function loadingState() {
+  return el('div', { class: 'view-loading', role: 'status', 'aria-live': 'polite' },
+    el('span', { class: 'view-loading__spinner', 'aria-hidden': 'true' }),
+    el('span', { text: t('busy.loading') })
+  );
 }
 
 function needsPerson(role) {
@@ -283,9 +305,9 @@ function homeFor(role) {
 /** One broken screen should not take down the shell. */
 function renderRenderError(err) {
   return el('section', { class: 'placeholder' },
-    el('h2', { text: 'This screen failed to render' }),
+    el('h2', { text: t('error.render.title') }),
     el('p', { class: 'muted', text: String(err?.message ?? err) }),
-    el('p', { class: 'small faint', text: 'Your data is untouched. The export screen still works if you need a backup.' }),
+    el('p', { class: 'small faint', text: t('error.render.body') }),
     el('a', { class: 'btn', href: '#/admin/export', text: t('admin.nav.export') })
   );
 }
@@ -304,6 +326,7 @@ function wireLangToggle() {
   const btn = document.getElementById('lang-toggle');
   if (!btn) return;
   btn.addEventListener('click', () => {
+    // Saves against the person currently selected — see store.saveLangPreference.
     toggleLang();
     applyStaticStrings();
     renderRoute({ scrollToTop: false });

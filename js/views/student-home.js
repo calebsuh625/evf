@@ -17,7 +17,7 @@
 
 import { el, button, toast } from '../dom.js';
 import { t, getLocale } from '../i18n.js';
-import { formatDual, formatInZone, dateKeyInZone } from '../time.js';
+import { formatDual, stampInZone } from '../time.js';
 import { nextClassFor, lastHeldSession } from '../tutor.js';
 
 /** How much history to render before asking. Keeps the DOM small on a phone. */
@@ -107,7 +107,7 @@ function homeworkCard(lastHeld, student, locale) {
       ? el('div', {},
           el('p', { class: 'st-homework__text', text: homework }),
           el('p', { class: 'small faint', text:
-            t('st.homework.from', { date: dateKeyInZone(lastHeld.scheduledAt, student.timezone) }) })
+            t('st.homework.from', { date: stampInZone(lastHeld.scheduledAt, student.timezone, { locale }) }) })
         )
       : el('p', { class: 'muted', text: t('st.homework.none') })
   );
@@ -187,8 +187,8 @@ function item(session, student, locale) {
   const held = session.occurred === true;
 
   return el('li', { class: `st-history__item${held ? '' : ' is-missed'}` },
-    el('span', { class: 'st-history__date tnum',
-      text: dateKeyInZone(session.scheduledAt, student.timezone) }),
+    el('span', { class: 'st-history__date',
+      text: stampInZone(session.scheduledAt, student.timezone, { locale }) }),
 
     held
       ? el('div', {},

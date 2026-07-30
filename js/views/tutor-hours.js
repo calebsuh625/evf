@@ -15,7 +15,7 @@
 
 import { el, viewHead, button, linkButton, toast } from '../dom.js';
 import { t, getLocale } from '../i18n.js';
-import { formatInZone, dateKeyInZone } from '../time.js';
+import { formatInZone, dateKeyInZone, stampInZone, zoneLabel } from '../time.js';
 import { hoursByTerm, sessionLog, hourBreakdown } from '../tutor.js';
 import { formatHours, toRoundedHours } from '../hours.js';
 import { objectsToCsv } from '../csv.js';
@@ -182,7 +182,7 @@ function sessionTable(rows, tutor, locale) {
         )),
         el('tbody', {}, rows.map((row) =>
           el('tr', {},
-            el('td', { text: formatInZone(row.session.scheduledAt, tutor.timezone, { locale, date: true, weekday: true }) }),
+            el('td', { text: stampInZone(row.session.scheduledAt, tutor.timezone, { locale, weekday: true }) }),
             el('td', { text: row.studentName }),
             el('td', { class: 'tnum', text: String(row.teachingMinutes) }),
             el('td', { class: 'tnum', text: String(row.prepMinutes) }),

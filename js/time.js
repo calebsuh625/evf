@@ -429,6 +429,31 @@ export function weekdayLabel(instant, tz, { locale = 'en-US', width = 'long' } =
     .format(toDate(instant));
 }
 
+/**
+ * A date, or a date and time, always carrying the zone it is expressed in.
+ *
+ * Every timestamp a person reads in this app belongs to somebody's clock, and
+ * which clock is never obvious: a tutor in California and a student in Beijing
+ * are looking at the same instant on different days. An unlabelled date is an
+ * invitation to read it as your own, so there is no unlabelled date on any
+ * screen.
+ *
+ * @param {string} instant
+ * @param {string} tz
+ * @param {{locale?:string, time?:boolean, weekday?:boolean}} [opts]
+ */
+export function stampInZone(instant, tz, opts = {}) {
+  const { locale = 'en-US', time = false, weekday = false } = opts;
+  const zone = zoneLabel(instant, tz, locale);
+  const body = time
+    ? formatInZone(instant, tz, { locale, weekday, date: true })
+    : new Intl.DateTimeFormat(locale, {
+        timeZone: tz, year: 'numeric', month: 'short', day: 'numeric',
+        ...(weekday ? { weekday: 'short' } : {})
+      }).format(toDate(instant));
+  return `${body} ${zone}`;
+}
+
 /** "YYYY-MM-DD" for the calendar date `instant` falls on in `tz`. */
 export function dateKeyInZone(instant, tz) {
   const p = wallPartsInZone(instant, tz);

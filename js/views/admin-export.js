@@ -12,9 +12,9 @@
  * spreadsheet somebody keeps privately.
  */
 
-import { el, viewHead, button, toast, clear } from '../dom.js';
+import { el, viewHead, button, toast, clear, withBusy } from '../dom.js';
 import { t, getLocale } from '../i18n.js';
-import { formatInZone } from '../time.js';
+import { stampInZone } from '../time.js';
 import { objectsToCsv } from '../csv.js';
 import {
   hoursByTutorRows, HOURS_BY_TUTOR_COLUMNS,
@@ -144,8 +144,7 @@ function restorePanel(store) {
       toast(err.message.split('\n')[0], 'error');
       for (const [i, line] of err.message.split('\n').entries()) {
         report.append(el('p', {
-          class: i === 0 ? 'small' : 'small muted',
-          style: i === 0 ? 'color:#8a1c1c' : null,
+          class: i === 0 ? 'small is-error' : 'small muted',
           text: line
         }));
       }
@@ -188,7 +187,7 @@ function statusPanel(store, data, nowIso) {
       row(t('data.status.schema'), String(data.version)),
       row(t('data.status.cache'), `${(store.cacheSizeBytes() / 1024).toFixed(1)} KB`),
       row(t('data.status.exported'), data.exportedAt
-        ? formatInZone(data.exportedAt, data.program.adminTimeZone, { locale, date: true })
+        ? stampInZone(data.exportedAt, data.program.adminTimeZone, { locale, time: true })
         : t('data.status.never'))
     )
   );
@@ -209,17 +208,13 @@ function handoverPanel() {
 
 function dangerPanel(store) {
   const load = button(t('data.sample.action'), {
-    onClick: async () => {
-      load.disabled = true;
-      try {
+    onClick: () => withBusy(load, {
+      busyLabel: t('busy.loading'),
+      run: async () => {
         await store.loadSampleData();
         toast(t('toast.sampleLoaded'));
-      } catch (err) {
-        toast(err.message.split('\n')[0], 'error');
-      } finally {
-        load.disabled = false;
       }
-    }
+    })
   });
 
   return el('section', { class: 'card danger-zone' },

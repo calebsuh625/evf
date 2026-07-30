@@ -38,11 +38,11 @@ configuration — the paths resolve correctly under a project subpath.
 
 ## Tests
 
-Open <http://localhost:8000/tests/test.html>. 449 unit tests covering the
+Open <http://localhost:8000/tests/test.html>. 475 tests covering the
 timezone math, the pairing scorer, the hour computation, CSV handling, the
 tutor-facing selectors, the matcher, the admin figures, the chart geometry,
-the bilingual dictionary, asset provenance, and the store's migration,
-validation and export logic.
+the bilingual dictionary, asset provenance, colour contrast, accessible
+naming, and the store's migration, validation and export logic.
 
 A few of those read the browser's Resource Timing data and so only run in a
 browser; in Node they report as skipped rather than passing vacuously.
@@ -58,7 +58,7 @@ code:
 
 ```sh
 node -e "import('./tests/runner.js').then(async ({run}) => {
-  for (const f of ['time','matching','hours','csv','store','tutor','admin','i18n','assets']) await import('./tests/'+f+'.test.js');
+  for (const f of ['time','matching','hours','csv','store','tutor','admin','i18n','assets','a11y']) await import('./tests/'+f+'.test.js');
   const r = await run(e => e.type==='fail' && console.log('FAIL', e.name, e.error));
   console.log(r); process.exit(r.failed ? 1 : 0);
 })"
@@ -180,6 +180,30 @@ no compliance dashboards, no automated nagging. A tutor who has gone quiet for
 two weeks does not need a warning, they need someone to ask if they are all
 right — so the app surfaces the pairing and a phone number, and stops there.
 The reasoning is in [CLAUDE.md](CLAUDE.md).
+
+## Accessibility, weight and polish
+
+Checked by tests rather than asserted:
+
+- **WCAG AA contrast** in light and dark. The suite parses the real stylesheet
+  and fails if any text pair drops below 4.5:1.
+- **Keyboard throughout**, with a visible focus ring. A test fails the build if
+  any rule sets `outline: none` on `:focus`.
+- **Named controls.** Every button, field and select has an accessible name,
+  and no two chips in the logging form share one — they read as "Prep 15 min",
+  not "15".
+- **44px touch targets** on any coarse pointer.
+- **Every date carries its time zone**, because the same instant is a different
+  day at each end of this program.
+- **No external requests at all** — verified from the browser's own resource
+  timings, not from reading the source.
+
+First visit is about **126 KB gzipped**, and views load on demand, so a student
+on a phone downloads 9 modules rather than 28 and never fetches the admin
+screens or the matcher. There are no images and no web fonts.
+
+The session-logging form fits without scrolling on a 375×667 phone, the
+smallest still in common use.
 
 ## Continuity
 

@@ -33,9 +33,10 @@
 .btn--quiet { background: transparent; border-color: transparent; color: var(--ink-soft); }
 .btn--quiet:hover { background: var(--paper-3); color: var(--ink); }
 
-.btn--danger { color: #8a1c1c; border-color: #e3bdbd; background: #fdf2f2; }
-@media (prefers-color-scheme: dark) {
-  .btn--danger { color: #f0a9a9; border-color: #4d2a2a; background: #2a1a1a; }
+.btn--danger {
+  color: var(--danger-ink);
+  border-color: var(--danger-line);
+  background: var(--danger-soft);
 }
 
 .btn--sm { min-height: 34px; padding: var(--sp-1) var(--sp-3); font-size: .875rem; }
@@ -176,7 +177,7 @@ tbody tr:hover td { background: var(--paper-2); }
   z-index: 60;
 }
 .toast[data-open="true"] { opacity: 1; transform: translate(-50%, 0); }
-.toast[data-tone="error"] { background: #7a1b1b; color: #fff; }
+.toast[data-tone="error"] { background: #7a1b1b; color: #ffffff; }
 
 /* Forms */
 
@@ -223,3 +224,49 @@ select {
   border: 1px solid var(--line);
   border-radius: var(--r-md);
 }
+
+/* Error text. A class rather than an inline style, so it follows the theme. */
+.is-error { color: var(--danger-ink); }
+
+/*
+ * Touch targets.
+ *
+ * Compact controls are fine with a mouse and are not fine with a thumb, so on
+ * a coarse pointer everything interactive grows to 44px — the size WCAG 2.5.5
+ * asks for. Measured on the tutor dashboard, where the small chips, the nav
+ * and the header controls were all landing between 34 and 39px.
+ */
+@media (pointer: coarse) {
+  .btn--sm,
+  .nav__link,
+  .lang-toggle,
+  .role-picker__select,
+  .chip {
+    min-height: 44px;
+  }
+  .nav__link { display: inline-flex; align-items: center; }
+  .lang-toggle, .role-picker__select { padding-inline: var(--sp-3); }
+}
+
+/* Shown only while a view module is still arriving on a slow connection. */
+.view-loading {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-5);
+  color: var(--ink-soft);
+}
+.view-loading__spinner {
+  width: 18px; height: 18px; flex: none;
+  border: 2px solid var(--line);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: view-spin .7s linear infinite;
+}
+@keyframes view-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .view-loading__spinner { animation: none; border-top-color: var(--line); }
+}
+
+/* A control mid-action reads as busy to assistive tech, not just visually. */
+.btn[data-busy="true"] { opacity: .7; cursor: progress; }

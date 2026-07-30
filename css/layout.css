@@ -75,7 +75,17 @@ body {
   margin: 0 auto;
   padding: var(--sp-5) var(--sp-4) var(--sp-7);
 }
-.app-main:focus { outline: none; }
+/*
+ * The skip link sends focus here. Showing a ring on :focus-visible only means
+ * it appears for the keyboard users who need it and stays out of the way of
+ * the programmatic focus moves the router makes. Suppressing it outright, as
+ * this rule used to, left skip-link users with no idea where they had landed.
+ */
+.app-main:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+  border-radius: var(--r-md);
+}
 
 .app-footer {
   padding: var(--sp-4);

@@ -91,6 +91,37 @@ export function linkButton(label, href, variant = '') {
   return el('a', { href, class: `btn${variant ? ` btn--${variant}` : ''}`, text: label });
 }
 
+/**
+ * Run an async action with an honest busy state.
+ *
+ * Every long action in the app goes through this, so they all behave the same
+ * way: the control disables and says what it is doing, failures surface the
+ * real message rather than "something went wrong", and the control always
+ * comes back — a button stuck disabled after an error is worse than the error.
+ *
+ * @param {HTMLButtonElement} control
+ * @param {{busyLabel: string, run: () => Promise<any>, onError?: (err) => void}} opts
+ */
+export async function withBusy(control, { busyLabel, run, onError }) {
+  const original = control.textContent;
+  control.disabled = true;
+  control.dataset.busy = 'true';
+  if (busyLabel) control.textContent = busyLabel;
+
+  try {
+    return await run();
+  } catch (err) {
+    // The real message, first line, never a generic apology.
+    toast(err?.message?.split('\n')[0] ?? String(err), 'error');
+    onError?.(err);
+    return null;
+  } finally {
+    control.disabled = false;
+    delete control.dataset.busy;
+    control.textContent = original;
+  }
+}
+
 let toastTimer = null;
 
 /**
