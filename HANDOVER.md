@@ -178,6 +178,29 @@ else. Every screen says so. Until that changes, treat it as notes rather than a
 way to contact somebody, and keep using WeChat or email for anything that
 actually has to arrive.
 
+## Sign-in
+
+Under **Sign-in** on the coordinator's menu. It is optional — the app works
+without it, and a program that has never set it up is never locked.
+
+If you do turn it on:
+
+1. Create your own account first. **Write that password down somewhere safe
+   before you close the tab.** There is no server and no reset email; nobody
+   can recover it for you, though a second coordinator account can be created
+   as a spare.
+2. Use **Give access** for everyone else. It generates a username and a short
+   code — read them out over WeChat. Families never have to create an account,
+   invent a password, or fill anything in.
+3. A code is shown **once**. If somebody loses theirs, press **New code**; it
+   takes a couple of seconds and nothing is lost.
+
+**Be honest with families about what this is.** Signing in stops people seeing
+each other's screens on a shared phone or laptop. It does **not** protect the
+data: the whole program sits in the browser, and anyone who knows how can read
+it. That is true of every version of this app until it has a real server. The
+app says so on the sign-in screen; please do not tell anyone otherwise.
+
 ## Removing people
 
 **Mark inactive, don't delete.**

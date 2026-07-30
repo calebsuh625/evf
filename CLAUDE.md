@@ -367,11 +367,60 @@ whole story: every resource same-origin, no off-origin `link`/`script`/`img`,
 and no `@font-face` pointing outside the origin. It only runs in a browser and
 reports as **skipped** in Node rather than passing vacuously.
 
+## Accounts and sign-in
+
+`js/auth.js`, `#/sign-in`, `#/admin/accounts`. Schema v7 adds `accounts`.
+
+**This is not a security boundary and must never be described as one.** The
+whole program is in the reader's browser; anyone who opens developer tools can
+read every record, change their own role, or delete the accounts table. What
+sign-in buys is identity (work attaches to a person rather than to whichever
+role the picker was left on), a credential store shaped the way a server would
+store it, and a shoulder-surfing barrier on a shared device. `auth.notSecurity`
+says exactly this, in both languages, on the sign-in screen and again on the
+coordinator's screen. Do not soften that copy.
+
+**A program with no accounts stays open.** `needsSignIn` is false when
+`accounts` is empty, and the 6 → 7 migration creates nobody. A coordinator who
+never set sign-in up must keep full access to their own records after any
+update; locking them out would be the worst bug this codebase could ship,
+because the records *are* the program. There is a test for it.
+
+**Students and guardians never invent a credential** (principle 5). No sign-up,
+no password rules, nothing to forget. The coordinator generates a short access
+code and reads it out; the family types it once. `describeSecretProblem` holds
+tutors and coordinators to a length rule and holds families to nothing beyond
+the code. `generateAccessCode` uses no vowels and no O/0/I/1/l, so a code can
+neither spell anything nor be misheard down a phone line.
+
+**A code is shown once, in a dialog, and never again.** It is hashed like any
+password, so it genuinely cannot be recovered — only reissued. The dialog does
+not time out, because somebody is copying it into WeChat.
+
+**PBKDF2-SHA-256, salted per account, iterations stored per account.** Not
+because a local app needs it, but because the accounts table travels inside
+the export — the file a coordinator emails their successor — and teenagers
+reuse passwords. Storing the iteration count per row means the cost can be
+raised later without invalidating everybody's password.
+
+**Sign-in failures never say which half was wrong.** Distinguishing an unknown
+username from a bad password tells anyone holding a copy of the file which
+accounts are real.
+
+**`viewAsFor` maps an account onto the existing viewAs model** — 'admin', a
+person id, or `guardian:<studentId>` — so accounts are additive and every
+screen, route and read-state key already built keeps working unchanged.
+
 ## The role picker
 
 There is no auth. `viewAs` is 'admin' or a person id in localStorage, and it
 is deliberately stored apart from program data — it is a fact about this
 browser, not about the program, and it must never travel inside an export.
+
+The picker is replaced by a name and a **Sign out** button once somebody is
+signed in: swapping role at will would make the account meaningless. It stays
+in full for a program with no accounts, which is the only way to look around
+the demo.
 
 **`route.role` is navigation, not security.** It decides which screens make
 sense for the selected person. Nothing in this app is a permission check and

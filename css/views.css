@@ -385,3 +385,68 @@
   .composer__foot .btn { width: 100%; }
   .bubble { max-width: 100%; }
 }
+
+/* ------------------------------------------------------------------ *
+ * Sign-in and accounts
+ * ------------------------------------------------------------------ */
+
+.signin { max-width: 24rem; margin: 0 auto; padding-top: var(--sp-5); }
+.signin h1 { margin-bottom: var(--sp-1); }
+.signin__form { display: grid; gap: var(--sp-4); margin: var(--sp-5) 0 var(--sp-4); }
+.signin__caveat { margin-top: var(--sp-4); }
+
+.field { display: grid; gap: 4px; }
+.field__label { font-weight: 600; font-size: .9375rem; }
+
+.field__input {
+  width: 100%;
+  min-height: 44px;
+  padding: var(--sp-2);
+  font: inherit;
+  color: inherit;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
+
+.field__hint { margin: 0; }
+.field__error { margin: 0; color: var(--danger-ink); font-weight: 600; }
+
+.session__who { font-weight: 600; font-size: .9375rem; }
+
+.invite-list { list-style: none; margin: var(--sp-3) 0 0; padding: 0; display: grid; gap: var(--sp-2); }
+
+.invite-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--paper-2);
+  border-radius: var(--r-sm);
+}
+
+/* The one-time code. Fixed and centred because it must not scroll away or
+   time out while somebody is reading it into WeChat. */
+.code-card {
+  position: fixed;
+  inset: 50% auto auto 50%;
+  transform: translate(-50%, -50%);
+  z-index: 50;
+  width: min(24rem, calc(100vw - 2rem));
+  padding: var(--sp-5);
+  background: var(--paper);
+  border: 2px solid var(--accent);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow);
+}
+
+.code-card h2 { margin: 0 0 var(--sp-2); }
+.code-card__pair { display: grid; grid-template-columns: auto 1fr; gap: var(--sp-2) var(--sp-3); margin: var(--sp-3) 0; }
+.code-card__pair dt { color: var(--ink-faint); font-size: .875rem; }
+.code-card__pair dd { margin: 0; font-weight: 600; }
+.code-card__code { font-size: 1.5rem; letter-spacing: .08em; }
+.code-card .btn { width: 100%; margin-top: var(--sp-3); }
+
+.mono { font-family: var(--mono); }
+.is-muted { opacity: .55; }

@@ -44,6 +44,10 @@ const ROUTES = [
   { path: '/admin/roster/:personId', key: 'admin.nav.roster', nav: [],    load: () => import('./views/admin-person.js') },
   { path: '/admin/export',    key: 'admin.nav.export',    nav: ['admin'], load: () => import('./views/admin-export.js') },
   { path: '/settings',        key: 'nav.settings',        nav: ['admin'], load: () => import('./views/settings.js') },
+  { path: '/admin/accounts',  key: 'auth.admin.title',    nav: ['admin'], load: () => import('./views/admin-accounts.js') },
+
+  // No `nav`: reached by being signed out, not by choosing to go there.
+  { path: '/sign-in',         key: 'auth.title',          nav: [],        load: () => import('./views/sign-in.js'), screen: 'sign-in' },
 
   // Tutor
   { path: '/tutor',                   key: 'tutor.nav.home',         nav: ['tutor'], role: 'tutor', load: () => import('./views/tutor-home.js') },
@@ -166,6 +170,33 @@ function renderNav() {
   }
 }
 
+/**
+ * Signed in, so the picker becomes a name and a way out.
+ *
+ * The free role picker stays for a program with no accounts, because that is
+ * still the only way to look around a demo.
+ */
+function renderSessionControls() {
+  const mount = document.getElementById('role-picker');
+  if (!mount) return false;
+
+  const account = store.currentAccount();
+  if (!account) return false;
+
+  const data = store.getState();
+  const person = account.personId ? data.people.find((p) => p.id === account.personId) : null;
+
+  clear(mount);
+  mount.append(
+    el('span', { class: 'session__who', text: person?.preferredName || person?.name || t('chat.roleAdmin') }),
+    button(t('auth.signOut'), {
+      variant: 'small quiet',
+      onClick: () => { store.signOut(); location.hash = '#/'; location.reload(); }
+    })
+  );
+  return true;
+}
+
 /** Unread across every thread the selected person belongs to. */
 function unreadForNav() {
   try {
@@ -221,6 +252,9 @@ function renderSampleBanner() {
 function renderRolePicker() {
   const mount = document.getElementById('role-picker');
   if (!mount) return;
+  // Once somebody is signed in, who they are is settled — swapping role at
+  // will would make the account meaningless.
+  if (renderSessionControls()) return;
   clear(mount);
 
   const data = store.getState();
@@ -293,6 +327,23 @@ async function renderRoute({ scrollToTop = true } = {}) {
   document.body.dataset.screen = route.screen ?? '';
 
   clear(container);
+
+  /*
+   * The gate. Only closes once somebody has actually set sign-in up — a
+   * program with no accounts must keep working exactly as it did, or an
+   * update would lock a coordinator out of their own records.
+   *
+   * This is navigation, not access control: the data is already in the
+   * browser and anyone with developer tools can read it. See js/auth.js.
+   */
+  if (store.needsSignIn() && route.path !== '/sign-in') {
+    const module = await import('./views/sign-in.js');
+    if (token !== renderToken) return;
+    module.render(container, { store, navigate });
+    renderSampleBanner();
+    document.title = `${t('auth.title')} · ${t('app.title')}`;
+    return;
+  }
 
   const view = store.currentView(store.getState());
 

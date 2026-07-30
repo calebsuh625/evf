@@ -10,7 +10,7 @@
 
 import { run } from './runner.js';
 
-const FILES = ['time', 'matching', 'hours', 'csv', 'store', 'chat', 'tutor', 'admin', 'i18n', 'assets', 'a11y'];
+const FILES = ['time', 'matching', 'hours', 'csv', 'store', 'chat', 'auth', 'tutor', 'admin', 'i18n', 'assets', 'a11y'];
 
 for (const file of FILES) {
   await import(`./${file}.test.js`);

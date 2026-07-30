@@ -62,6 +62,22 @@ CLAUDE.md also records what this will **never** have — strike tracking,
 suspensions, compliance dashboards, automated nagging — and why. Read that
 before agreeing to add any of them.
 
+## Signing in
+
+Optional, and off until a coordinator turns it on — a program with no accounts
+is never locked, so an update can never strand somebody outside their own
+records. Coordinators and tutors choose a password; **families never create
+anything**, they are handed a short access code and type it once (principle 5).
+
+Credentials are salted PBKDF2-SHA-256 with the iteration count stored per
+account, so moving to a real backend later means moving where verification
+runs — not asking forty people to sign up again.
+
+**It is not a security boundary, and the app says so on the screen.** With no
+server, the whole program lives in the browser and anyone who opens developer
+tools can read it. Sign-in buys identity and keeps people out of each other's
+screens on a shared device. That is all it can buy until there is a backend.
+
 ## Never commit real data
 
 `data/sample.json` is entirely invented and stays that way: **one coordinator,
@@ -131,16 +147,16 @@ under the `/evf/` project subpath.
 
 [![tests](https://github.com/calebsuh625/evf/actions/workflows/tests.yml/badge.svg)](https://github.com/calebsuh625/evf/actions/workflows/tests.yml)
 
-**489 tests.** Every push and pull request runs them and fails on a regression.
+**525 tests.** Every push and pull request runs them and fails on a regression.
 
 In a browser: open <http://localhost:8000/tests/test.html>.
 
 Headless:
 
 ```sh
-node tests/run-node.mjs                              # 478 tests, nothing to install
+node tests/run-node.mjs                              # 514 tests, nothing to install
 npm install && npx playwright install chromium
-node tests/run-browser.mjs http://localhost:8000     # all 510
+node tests/run-browser.mjs http://localhost:8000     # all 546
 ```
 
 The Node run needs nothing installed, because the logic modules are deliberately
@@ -258,6 +274,7 @@ js/
   time.js           timezone math       — pure functions, no DOM
   matching.js       pairing scorer      — pure functions, no DOM
   chat.js           class threads       — pure functions, no DOM
+  auth.js           accounts, PBKDF2    — pure functions, no DOM
   hours.js          hour computation    — pure functions, no DOM
   tutor.js          tutor-facing views  — pure functions, no DOM
   admin.js          coordinator figures — pure functions, no DOM

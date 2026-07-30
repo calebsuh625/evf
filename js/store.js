@@ -58,12 +58,37 @@ import {
 } from './csv.js';
 import { isValidTimeZone, parseHhMm } from './time.js';
 import { SESSION_CREDIT_MINUTES } from './hours.js';
+import { ACCOUNT_ROLES, newAccount, attemptSignIn, viewAsFor, hasAccounts } from './auth.js';
 
-export const SCHEMA_VERSION = 6;
+export const SCHEMA_VERSION = 7;
 
 const STORAGE_KEY = 'evf.program.v1';
 const LANG_KEY = 'evf.lang';
 const VIEW_AS_KEY = 'evf.viewAs';
+
+/**
+ * Per-browser thread read markers, keyed by who is looking. Deliberately
+ * outside the program document and outside every export — read state is a
+ * fact about this device, and the moment it travels between people "seen and
+ * not replied to" becomes something the app reports. See js/chat.js.
+ */
+export const READ_KEY = 'evf.read';
+
+/**
+ * Who is signed in on this browser. Beside `viewAs` for the same reason: a
+ * fact about the device, never about the program, and never exported.
+ */
+export const SESSION_KEY = 'evf.session';
+
+/**
+ * Storage can genuinely fail — private browsing, a full quota, a locked-down
+ * school machine — and none of that is worth breaking the app over. But a
+ * silent `catch {}` here once hid a plain ReferenceError for a whole release,
+ * so every one of them says something now.
+ */
+function warnStorage(what, err) {
+  console.warn(`[store] could not ${what}:`, err?.message ?? err);
+}
 
 export const ROLES = Object.freeze(['tutor', 'student']);
 
@@ -124,7 +149,8 @@ export function emptyProgram() {
     pairings: [],
     sessions: [],
     availability: [],
-    messages: []
+    messages: [],
+    accounts: []
   };
 }
 
@@ -274,6 +300,18 @@ export function isLogged(session) {
  * newer. Never edit a shipped migration — add the next one.
  */
 const MIGRATIONS = {
+  /**
+   * 6 -> 7: adds `accounts`.
+   *
+   * Empty, deliberately. A program that already exists has nobody signed up,
+   * and the app must keep working exactly as before until a coordinator
+   * chooses to set sign-in up — see `hasAccounts`. Creating an account here
+   * would lock somebody out of their own records on upgrade.
+   */
+  6(data) {
+    return { ...data, version: 7, accounts: Array.isArray(data.accounts) ? data.accounts : [] };
+  },
+
   /**
    * 5 -> 6: adds `messages`, one thread per pairing. Nothing existing has any,
    * so this is an empty table plus the collection so views never guard for it.
@@ -557,7 +595,8 @@ function normalise(data) {
     pairings: asArray(data.pairings),
     sessions: asArray(data.sessions),
     availability: asArray(data.availability),
-    messages: asArray(data.messages)
+    messages: asArray(data.messages),
+    accounts: asArray(data.accounts)
   };
 }
 
@@ -597,7 +636,7 @@ export function validate(data) {
     return { errors: ['Not a program file: expected a JSON object.'], warnings };
   }
 
-  for (const key of ['people', 'pairings', 'sessions', 'availability', 'messages']) {
+  for (const key of ['people', 'pairings', 'sessions', 'availability', 'messages', 'accounts']) {
     if (!Array.isArray(data[key])) errors.push(`"${key}" must be an array.`);
   }
   if (errors.length) return { errors, warnings };
@@ -766,6 +805,38 @@ export function validate(data) {
       errors.push(`Message "${m.id}" deletedAt is not an ISO 8601 UTC string.`);
     }
   });
+
+  /* Accounts */
+  const accountIds = new Set();
+  const usernames = new Set();
+  (data.accounts ?? []).forEach((a, i) => {
+    const at = `accounts[${i}]`;
+    if (!a || typeof a !== 'object') { errors.push(`${at} is not an object.`); return; }
+    if (!a.id || typeof a.id !== 'string') { errors.push(`${at} has no id.`); return; }
+    if (accountIds.has(a.id)) { errors.push(`Duplicate account id "${a.id}".`); return; }
+    accountIds.add(a.id);
+
+    if (!ACCOUNT_ROLES.includes(a.role)) {
+      errors.push(`Account "${a.username ?? a.id}" has role "${a.role}"; expected one of ${ACCOUNT_ROLES.join(', ')}.`);
+    }
+    if (!a.username) errors.push(`Account "${a.id}" has no username.`);
+    else if (usernames.has(a.username)) errors.push(`Two accounts share the username "${a.username}".`);
+    else usernames.add(a.username);
+
+    // A credential with no hash would silently accept anything.
+    if (!a.salt || !a.hash) errors.push(`Account "${a.username ?? a.id}" has no stored password.`);
+
+    // The coordinator has no roster row; everyone else must resolve.
+    if (a.role !== 'admin' && !personIds.has(a.personId)) {
+      errors.push(`Account "${a.username ?? a.id}" points at person "${a.personId}", who is not in this file.`);
+    }
+  });
+
+  if ((data.accounts ?? []).length && !(data.accounts ?? []).some((a) => a.role === 'admin' && !a.disabled)) {
+    // Not fatal on import — refusing the file would strand somebody whose
+    // only admin account was disabled by a bad edit — but they need telling.
+    warnings.push('No coordinator account is enabled. Nobody can administer this program until one is restored.');
+  }
 
   /* Soft observations */
   for (const person of data.people) {
@@ -1662,6 +1733,121 @@ export function updatePerson(personId, patch) {
   return personById(personId);
 }
 
+/* ------------------------------------------------------------------ *
+ * Accounts
+ *
+ * A reminder that belongs at every entry point: none of this is a security
+ * boundary while the app is local. See the header of js/auth.js.
+ * ------------------------------------------------------------------ */
+
+/** Create an account and store it. Async because hashing is. */
+export async function createAccount({ personId = null, role, username, secret }) {
+  if (role !== 'admin' && !state.people.some((p) => p.id === personId)) {
+    const err = new Error(`No such person: ${personId}`);
+    err.code = 'no-person';
+    throw err;
+  }
+  const taken = state.accounts.some((a) => a.username === String(username ?? '').trim().toLowerCase());
+  if (taken) {
+    const err = new Error('That username is already taken.');
+    err.code = 'username-taken';
+    throw err;
+  }
+
+  const account = await newAccount({ id: newId('acct'), personId, role, username, secret });
+  update((current) => ({ ...current, accounts: [...current.accounts, account] }));
+  return account;
+}
+
+/** Replace an account's password or access code. */
+export async function setAccountSecret(accountId, secret) {
+  const existing = state.accounts.find((a) => a.id === accountId);
+  if (!existing) {
+    const err = new Error(`No such account: ${accountId}`);
+    err.code = 'no-account';
+    throw err;
+  }
+  const replacement = await newAccount({
+    id: existing.id,
+    personId: existing.personId,
+    role: existing.role,
+    username: existing.username,
+    secret,
+    createdAt: existing.createdAt
+  });
+  update((current) => ({
+    ...current,
+    accounts: current.accounts.map((a) => (a.id === accountId
+      ? { ...replacement, lastSignInAt: a.lastSignInAt, disabled: a.disabled }
+      : a))
+  }));
+  return replacement;
+}
+
+/**
+ * Turn an account off without deleting it.
+ *
+ * Deleting would free the username for reuse and lose when it was created;
+ * a graduated tutor's account is part of the program's history.
+ */
+export function setAccountDisabled(accountId, disabled) {
+  update((current) => ({
+    ...current,
+    accounts: current.accounts.map((a) => (a.id === accountId ? { ...a, disabled: Boolean(disabled) } : a))
+  }));
+}
+
+export function removeAccount(accountId) {
+  update((current) => ({ ...current, accounts: current.accounts.filter((a) => a.id !== accountId) }));
+}
+
+/**
+ * Try to sign in. On success, records the time and switches the browser to
+ * that person's view.
+ */
+export async function signIn(username, secret) {
+  const result = await attemptSignIn(state.accounts, username, secret);
+  if (!result.ok) return result;
+
+  const at = new Date().toISOString();
+  update((current) => ({
+    ...current,
+    accounts: current.accounts.map((a) => (a.id === result.account.id ? { ...a, lastSignInAt: at } : a))
+  }));
+
+  saveSession(result.account.id);
+  saveViewAs(viewAsFor(result.account));
+  return { ok: true, account: { ...result.account, lastSignInAt: at } };
+}
+
+export function signOut() {
+  try { localStorage.removeItem(SESSION_KEY); } catch (err) { warnStorage('sign out', err); }
+  saveViewAs('admin');
+}
+
+function saveSession(accountId) {
+  try { localStorage.setItem(SESSION_KEY, accountId); } catch (err) { warnStorage('save session', err); }
+}
+
+/** The signed-in account, or null. Re-read from the document every time, so
+ *  an account disabled in a restored backup takes effect at once. */
+export function currentAccount(data = state) {
+  let id;
+  try { id = localStorage.getItem(SESSION_KEY); } catch (err) { warnStorage('read session', err); return null; }
+  if (!id) return null;
+  return (data.accounts ?? []).find((a) => a.id === id && !a.disabled) ?? null;
+}
+
+/**
+ * Whether this browser must sign in before seeing anything.
+ *
+ * False when the program has no accounts at all — a coordinator who has not
+ * set sign-in up must never be locked out of their own records by an update.
+ */
+export function needsSignIn(data = state) {
+  return hasAccounts(data) && !currentAccount(data);
+}
+
 /**
  * Post a message to a class thread.
  *
@@ -1748,7 +1934,8 @@ export function readState(viewKey = loadViewAs()) {
     const raw = localStorage.getItem(`${READ_KEY}:${viewKey}`);
     const parsed = raw ? JSON.parse(raw) : null;
     return parsed && typeof parsed === 'object' ? parsed : {};
-  } catch {
+  } catch (err) {
+    warnStorage('read thread markers', err);
     return {};
   }
 }
@@ -1758,8 +1945,8 @@ export function markThreadRead(pairingId, viewKey = loadViewAs()) {
   const next = { ...readState(viewKey), [pairingId]: new Date().toISOString() };
   try {
     localStorage.setItem(`${READ_KEY}:${viewKey}`, JSON.stringify(next));
-  } catch {
-    /* Private browsing, or a full quota. Unread badges are not worth an error. */
+  } catch (err) {
+    warnStorage('mark thread read', err);
   }
   return next;
 }
