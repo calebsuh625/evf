@@ -4,7 +4,7 @@
  * As with the rest of the suite, only pure functions are exercised: js/tutor.js
  * takes its data as an argument and never reads the clock, so every assertion
  * here is stable. The store mutations that write to localStorage are covered
- * through their pure parts (capSessionMinutes) rather than by calling them.
+ * through their pure parts (clampRecordedMinutes) rather than by calling them.
  */
 
 import { describe, it, equal, ok, deepEqual, throws } from './runner.js';
@@ -21,7 +21,8 @@ import {
   hoursByTerm,
   sessionLog
 } from '../js/tutor.js';
-import { capSessionMinutes, SESSION_MINUTE_CAP, migrate, validate } from '../js/store.js';
+import { clampRecordedMinutes, MAX_RECORDED_MINUTES, migrate, validate } from '../js/store.js';
+import { SESSION_CREDIT_MINUTES } from '../js/hours.js';
 import { fromUtc, weekdayLabel } from '../js/time.js';
 
 const LA = 'America/Los_Angeles';
@@ -319,21 +320,26 @@ describe('studentCard', () => {
 describe('hourBreakdown', () => {
   const data = fixture();
 
-  it('splits teaching, prep and follow-up', () => {
+  it('credits each class held at the standard rate', () => {
     const b = hourBreakdown('t1', data);
-    // x1 60+15+10, x2 60, x3 45+5. x4 unlogged, x5 did not happen.
-    equal(b.teachingMinutes, 165);
-    equal(b.prepMinutes, 20);
-    equal(b.followupMinutes, 10);
-    equal(b.totalMinutes, 195);
+    // x1, x2 and x3 happened. x4 is unlogged and x5 did not happen, and
+    // neither is worth anything.
     equal(b.sessionCount, 3);
+    equal(b.totalMinutes, 3 * SESSION_CREDIT_MINUTES);
+    equal(b.creditMinutesPerSession, SESSION_CREDIT_MINUTES, 'the record has to state its basis');
     deepEqual(b.studentIds, ['s1', 's2']);
+  });
+
+  it('still reports the recorded class time alongside the credit', () => {
+    // Kept so a historical export does not lose the column, and so the
+    // difference between recorded and credited is never hidden.
+    equal(hourBreakdown('t1', data).classTimeMinutes, 165);
   });
 
   it('reports hours rounded for a form', () => {
     const b = hourBreakdown('t1', data);
-    equal(b.totalHours, 3.25);
-    equal(b.totalLabel, '3.25');
+    equal(b.totalHours, 3 * (SESSION_CREDIT_MINUTES / 60));
+    equal(b.totalLabel, '6');
   });
 
   it('counts nothing for unlogged or did-not-happen sessions', () => {
@@ -355,8 +361,8 @@ describe('hoursByTerm', () => {
     const { terms, currentTerm, allTime } = hoursByTerm('t1', data, { asOfIso: NOW });
     equal(terms.length, 2);
     equal(currentTerm.id, 'summer');
-    equal(currentTerm.totalMinutes, 195);
-    equal(allTime.totalMinutes, 195);
+    equal(currentTerm.totalMinutes, 3 * SESSION_CREDIT_MINUTES);
+    equal(allTime.totalMinutes, 3 * SESSION_CREDIT_MINUTES);
   });
 
   it('sorts terms newest first', () => {
@@ -368,7 +374,7 @@ describe('hoursByTerm', () => {
     const result = hoursByTerm('t1', noTerms, { asOfIso: NOW });
     deepEqual(result.terms, []);
     equal(result.currentTerm, null);
-    equal(result.allTime.totalMinutes, 195);
+    equal(result.allTime.totalMinutes, 3 * SESSION_CREDIT_MINUTES);
   });
 });
 
@@ -387,51 +393,45 @@ describe('sessionLog', () => {
     ok(!ids.includes('x5'), 'did not happen');
   });
 
-  it('breaks each row into its minute parts for the export', () => {
-    const row = sessionLog('t1', data).find((r) => r.session.id === 'x1');
-    equal(row.teachingMinutes, 60);
-    equal(row.prepMinutes, 15);
-    equal(row.followupMinutes, 10);
-    equal(row.minutes, 85);
+  it('credits every row the same, whatever was recorded against it', () => {
+    const rows = sessionLog('t1', data).filter((r) => r.session.occurred === true);
+    for (const row of rows) {
+      equal(row.minutes, SESSION_CREDIT_MINUTES, `row ${row.session.id}`);
+    }
+    // The recorded parts survive for the export, and differ from the credit.
+    const first = rows.find((r) => r.session.id === 'x1');
+    equal(first.teachingMinutes, 60);
+    equal(first.prepMinutes, 15);
   });
 });
 
 /* ================================================================== *
- * The two-hour cap
+ * Recorded minutes
+ *
+ * These no longer decide anybody's hours — every class held is credited a
+ * flat two hours, asserted in hours.test.js. All this does is keep a stored
+ * number believable.
  * ================================================================== */
 
-describe('capSessionMinutes', () => {
-  it('leaves an ordinary session alone', () => {
-    const capped = capSessionMinutes({ durationMinutes: 60, prepMinutes: 15, followupMinutes: 0 });
-    equal(capped.totalMinutes, 75);
-    equal(capped.capped, false);
+describe('clampRecordedMinutes', () => {
+  it('leaves ordinary minutes alone', () => {
+    const m = clampRecordedMinutes({ durationMinutes: 60, prepMinutes: 15, followupMinutes: 0 });
+    equal(m.durationMinutes, 60);
+    equal(m.totalMinutes, 75);
   });
 
-  it('allows exactly two hours', () => {
-    const capped = capSessionMinutes({ durationMinutes: 60, prepMinutes: 30, followupMinutes: 30 });
-    equal(capped.totalMinutes, SESSION_MINUTE_CAP);
-    equal(capped.capped, false);
+  it('no longer caps a total at two hours, because the total is not the point', () => {
+    const m = clampRecordedMinutes({ durationMinutes: 90, prepMinutes: 60, followupMinutes: 30 });
+    equal(m.totalMinutes, 180, 'recorded time is descriptive, not a budget');
   });
 
-  it('trims follow-up first, then prep, and never the teaching time', () => {
-    const capped = capSessionMinutes({ durationMinutes: 60, prepMinutes: 60, followupMinutes: 30 });
-    equal(capped.durationMinutes, 60, 'time with the student is never the thing that gets cut');
-    equal(capped.prepMinutes, 60);
-    equal(capped.followupMinutes, 0);
-    equal(capped.totalMinutes, 120);
-    equal(capped.capped, true);
-  });
-
-  it('caps a single absurd duration', () => {
-    const capped = capSessionMinutes({ durationMinutes: 600, prepMinutes: 60, followupMinutes: 30 });
-    equal(capped.durationMinutes, 120);
-    equal(capped.prepMinutes, 0);
-    equal(capped.followupMinutes, 0);
+  it('clamps an absurd single figure', () => {
+    const m = clampRecordedMinutes({ durationMinutes: 6000, prepMinutes: 0, followupMinutes: 0 });
+    equal(m.durationMinutes, MAX_RECORDED_MINUTES);
   });
 
   it('treats junk as zero rather than producing NaN', () => {
-    const capped = capSessionMinutes({ durationMinutes: 'x', prepMinutes: null, followupMinutes: -5 });
-    equal(capped.totalMinutes, 0);
-    equal(capped.capped, false);
+    const m = clampRecordedMinutes({ durationMinutes: 'x', prepMinutes: null, followupMinutes: -5 });
+    equal(m.totalMinutes, 0);
   });
 });

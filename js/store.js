@@ -57,6 +57,7 @@ import {
   parseNumber
 } from './csv.js';
 import { isValidTimeZone, parseHhMm } from './time.js';
+import { SESSION_CREDIT_MINUTES } from './hours.js';
 
 export const SCHEMA_VERSION = 6;
 
@@ -1455,17 +1456,23 @@ export function summary(data = state) {
  * Mutations
  * ------------------------------------------------------------------ */
 
-/** Minutes a single session may contribute in total. */
-export const SESSION_MINUTE_CAP = 120;
+/**
+ * A sane ceiling on recorded class length, so a slipped thumb cannot store
+ * "600 minutes" in a student's history.
+ *
+ * This is **not** an hours cap. Hours no longer depend on it: every class that
+ * happened is credited a flat two hours by `SESSION_CREDIT_MINUTES` in
+ * hours.js. This only keeps the recorded class length believable.
+ */
+export const MAX_RECORDED_MINUTES = 480;
 
 /**
  * Record what happened in a session, creating the row if the session was
  * never on the calendar.
  *
- * Total minutes are capped at two hours. The cap is applied here rather than
- * only in the form, so it holds however the entry point changes — and it
- * trims follow-up first, then prep, never the time actually spent with the
- * student.
+ * Minutes recorded here describe what happened; they no longer decide what
+ * anybody is credited. Every class that happened is worth a flat two hours —
+ * see `SESSION_CREDIT_MINUTES` in hours.js.
  *
  * @param {{id?:string, pairingId:string, scheduledAt:string, occurred:boolean,
  *          durationMinutes?:number, prepMinutes?:number, followupMinutes?:number,
@@ -1478,7 +1485,14 @@ export function logSession(entry) {
     throw new TypeError('logSession requires occurred to be true or false.');
   }
 
-  const capped = capSessionMinutes(entry);
+  // Nobody is asked how long it took, so a held class records the standard
+  // credited block. An entry point that does supply minutes (a CSV import of
+  // historical records) keeps what it supplied.
+  const minutes = clampRecordedMinutes({
+    durationMinutes: entry.durationMinutes ?? SESSION_CREDIT_MINUTES,
+    prepMinutes: entry.prepMinutes ?? 0,
+    followupMinutes: entry.followupMinutes ?? 0
+  });
   const saved = {
     ...newSession({
       id: entry.id,
@@ -1486,9 +1500,9 @@ export function logSession(entry) {
       scheduledAt: entry.scheduledAt ?? new Date().toISOString()
     }),
     occurred: entry.occurred,
-    durationMinutes: entry.occurred ? capped.durationMinutes : 0,
-    prepMinutes: entry.occurred ? capped.prepMinutes : 0,
-    followupMinutes: entry.occurred ? capped.followupMinutes : 0,
+    durationMinutes: entry.occurred ? minutes.durationMinutes : 0,
+    prepMinutes: entry.occurred ? minutes.prepMinutes : 0,
+    followupMinutes: entry.occurred ? minutes.followupMinutes : 0,
     covered: entry.covered ?? '',
     homework: entry.homework ?? '',
     loggedAt: new Date().toISOString()
@@ -1506,30 +1520,26 @@ export function logSession(entry) {
 }
 
 /**
- * Clamp a session's minutes to the cap, trimming follow-up first and prep
- * second. Pure, so the form can show the same numbers it will save.
+ * Keep recorded minutes believable. Pure, so the form can show what it saves.
+ *
+ * Note what this does NOT do: it does not decide anybody's hours. A class that
+ * happened is credited two hours whether it ran twenty minutes or ninety.
  */
-export function capSessionMinutes({ durationMinutes, prepMinutes, followupMinutes }, cap = SESSION_MINUTE_CAP) {
+export function clampRecordedMinutes({ durationMinutes, prepMinutes, followupMinutes }, max = MAX_RECORDED_MINUTES) {
   const clean = (n) => {
     const value = Number(n);
-    return Number.isFinite(value) && value > 0 ? Math.round(value) : 0;
+    return Number.isFinite(value) && value > 0 ? Math.min(Math.round(value), max) : 0;
   };
 
-  let duration = Math.min(clean(durationMinutes), cap);
-  let prep = clean(prepMinutes);
-  let followup = clean(followupMinutes);
-
-  let spare = cap - duration;
-  prep = Math.min(prep, Math.max(0, spare));
-  spare -= prep;
-  followup = Math.min(followup, Math.max(0, spare));
+  const duration = clean(durationMinutes);
+  const prep = clean(prepMinutes);
+  const followup = clean(followupMinutes);
 
   return {
     durationMinutes: duration,
     prepMinutes: prep,
     followupMinutes: followup,
-    totalMinutes: duration + prep + followup,
-    capped: clean(durationMinutes) + clean(prepMinutes) + clean(followupMinutes) > cap
+    totalMinutes: duration + prep + followup
   };
 }
 

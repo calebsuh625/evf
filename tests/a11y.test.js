@@ -224,9 +224,14 @@ describe('session logging is usable without sight or a mouse', () => {
     deepEqual(unnamed, []);
   });
 
-  it('the yes/no and chip groups expose their state', () => {
+  it('the chip groups expose their state', () => {
+    /*
+     * One group now, not four. The form stopped asking how long anything took
+     * once every class became a flat two hours — see SESSION_CREDIT_MINUTES.
+     * All that is left to tap is whether it happened.
+     */
     const groups = [...doc.querySelectorAll('.log-chips')];
-    ok(groups.length >= 4, `expected the four chip groups, found ${groups.length}`);
+    ok(groups.length >= 1, `expected at least one chip group, found ${groups.length}`);
 
     for (const group of groups) {
       equal(group.getAttribute('role'), 'group', 'a chip row must be a labelled group');

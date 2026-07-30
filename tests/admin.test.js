@@ -27,6 +27,7 @@ import {
 import {
   niceScale, scaleSeries, linePath, areaPath, labelIndices, tickPositions, lineChart, DEFAULT_BOX
 } from '../js/chart.js';
+import { SESSION_CREDIT_MINUTES } from '../js/hours.js';
 
 const NY = 'America/New_York';
 const SH = 'Asia/Shanghai';
@@ -140,13 +141,13 @@ describe('periodTotals', () => {
     // NOW is Wednesday 17 June. Only x1 (Mon 15 June) is in that week.
     const totals = periodTotals(fixture(), { nowIso: NOW });
     equal(totals.week.sessions, 1);
-    equal(totals.week.minutes, 70, '60 teaching plus 10 prep');
+    equal(totals.week.minutes, 1 * SESSION_CREDIT_MINUTES, 'one class held, at the standard credit');
   });
 
   it('scopes to the calendar month', () => {
     const totals = periodTotals(fixture(), { nowIso: NOW });
     equal(totals.month.sessions, 2, 'x1 and x2 are both in June');
-    equal(totals.month.minutes, 130);
+    equal(totals.month.minutes, 2 * SESSION_CREDIT_MINUTES);
   });
 
   it('picks the term containing now, and reports its label', () => {
@@ -163,7 +164,7 @@ describe('periodTotals', () => {
   it('all time counts everything held', () => {
     const totals = periodTotals(fixture(), { nowIso: NOW });
     equal(totals.allTime.sessions, 4);
-    equal(totals.allTime.minutes, 250);
+    equal(totals.allTime.minutes, 4 * SESSION_CREDIT_MINUTES);
   });
 
   it('counts a session logged in this very minute', () => {
@@ -466,14 +467,16 @@ describe('hoursByTutorRows', () => {
     ok(rows.some((r) => r.tutorId === 't3' && r.totalMinutes === 0));
   });
 
-  it('splits the minutes and reports hours ready for a form', () => {
+  it('reports hours ready for a form, credited per class held', () => {
     const row = hoursByTutorRows(fixture()).find((r) => r.tutorId === 't1');
     equal(row.sessions, 4);
+    equal(row.totalMinutes, 4 * SESSION_CREDIT_MINUTES);
+    equal(row.totalHours, String(4 * (SESSION_CREDIT_MINUTES / 60)));
+    equal(row.students, 2);
+    // Recorded minutes stay on the row and deliberately do not add up to the
+    // total — the total is a count times a rate.
     equal(row.teachingMinutes, 240);
     equal(row.prepMinutes, 10);
-    equal(row.totalMinutes, 250);
-    equal(row.totalHours, '4.25');
-    equal(row.students, 2);
   });
 
   it('has a column list matching its rows', () => {

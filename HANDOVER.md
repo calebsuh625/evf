@@ -216,8 +216,15 @@ hours split into teaching / prep / follow-up, every session listed, and
 signature lines. It is formatted for NHS, the Congressional Award and the
 President's Volunteer Service Award.
 
-You sign it. The hours are computed from the sessions tutors logged at the time,
+You sign it. The hours are computed from the classes tutors logged at the time,
 not typed in afterwards, which is exactly what makes it worth signing.
+
+**How the hours are worked out:** every class a tutor held counts as **2 hours**
+— the class itself plus preparation and follow-up. Nobody is asked how long a
+class ran, so a class that finished early counts the same as one that overran.
+The printed record says this in a box on the page, so whoever signs it knows
+exactly what they are attesting to. Do not remove that line: it is what makes
+the figure honest rather than an estimate presented as a measurement.
 
 If you need every tutor's totals at once: **Export → Hours by tutor** (CSV).
 

@@ -13,16 +13,22 @@
  *   - The text fields sit last so the on-screen keyboard covers nothing that
  *     still needs tapping.
  *   - Save writes immediately and returns to the dashboard. No confirm step.
+ *
+ * **The form does not ask how long anything took.** Every class that happened
+ * is credited a flat two hours (`SESSION_CREDIT_MINUTES`), so a question about
+ * minutes would change nothing and principle 2 forbids collecting data for its
+ * own sake. What is left is the only thing that varies — did it happen, what
+ * did you cover, what is the homework — which is also the only thing the
+ * student and the next tutor actually need.
+ *
+ * That takes logging from four taps to one, plus whatever the tutor chooses
+ * to type.
  */
 
 import { el, viewHead, button, toast } from '../dom.js';
 import { t, getLocale } from '../i18n.js';
 import { formatDual, stampInZone } from '../time.js';
 import { lastHeldSession, nextClassFor } from '../tutor.js';
-
-const DURATIONS = [30, 60];
-const PREPS = [0, 15, 30, 45, 60];
-const FOLLOWUPS = [0, 15, 30];
 
 export function render(container, { store, tutor, params, query, navigate, nowIso }) {
   const data = store.getState();
@@ -43,11 +49,6 @@ export function render(container, { store, tutor, params, query, navigate, nowIs
   /* The working copy. Nothing is written until Save. */
   const form = {
     occurred: true,
-    durationMinutes: pickNearest(
-      target.session?.durationMinutes ?? data.program.defaultSessionMinutes ?? 60, DURATIONS
-    ),
-    prepMinutes: target.session?.prepMinutes ?? 0,
-    followupMinutes: target.session?.followupMinutes ?? 0,
     covered: target.session?.covered ?? '',
     homework: target.session?.homework ?? ''
   };
@@ -56,17 +57,12 @@ export function render(container, { store, tutor, params, query, navigate, nowIs
   const details = el('div', { class: 'log-details' });
 
   function refresh() {
-    const capped = store.capSessionMinutes(form);
-    form.durationMinutes = capped.durationMinutes;
-    form.prepMinutes = capped.prepMinutes;
-    form.followupMinutes = capped.followupMinutes;
-
-    // replaceChildren does not filter nulls the way el() does — passing one
-    // appends a literal "null" text node.
-    totalLine.replaceChildren(...[
-      el('span', { text: t('tutor.log.total', { total: `${capped.totalMinutes} ${t('tutor.log.minutes', { n: '' }).trim()}` }) }),
-      capped.capped ? el('span', { class: 'badge badge--warn', text: t('tutor.log.capped') }) : null
-    ].filter(Boolean));
+    // What this save is worth. Constant when it happened, nothing when it did
+    // not — and saying so here means a tutor never wonders whether a short
+    // class shortchanged them.
+    totalLine.replaceChildren(el('span', {
+      text: form.occurred ? t('tutor.log.credits') : t('tutor.log.creditsNone')
+    }));
     details.dataset.hidden = form.occurred ? 'false' : 'true';
   }
 
@@ -78,9 +74,6 @@ export function render(container, { store, tutor, params, query, navigate, nowIs
         pairingId: pairing.id,
         scheduledAt: target.scheduledAt,
         occurred: form.occurred,
-        durationMinutes: form.durationMinutes,
-        prepMinutes: form.prepMinutes,
-        followupMinutes: form.followupMinutes,
         covered: form.covered.trim(),
         homework: form.homework.trim()
       });
@@ -109,26 +102,6 @@ export function render(container, { store, tutor, params, query, navigate, nowIs
   );
 
   details.append(
-    chipGroup(t('tutor.log.duration'),
-      DURATIONS.map((n) => ({ value: n, label: `${n}`, spoken: t('tutor.log.minutes', { n }) })),
-      () => form.durationMinutes, (v) => { form.durationMinutes = v; refresh(); }),
-
-    chipGroup(t('tutor.log.prep'),
-      PREPS.map((n) => ({
-        value: n,
-        label: n === 0 ? t('tutor.log.none') : `${n}`,
-        spoken: n === 0 ? t('tutor.log.none') : t('tutor.log.minutes', { n })
-      })),
-      () => form.prepMinutes, (v) => { form.prepMinutes = v; refresh(); }),
-
-    chipGroup(t('tutor.log.followup'),
-      FOLLOWUPS.map((n) => ({
-        value: n,
-        label: n === 0 ? t('tutor.log.none') : `${n}`,
-        spoken: n === 0 ? t('tutor.log.none') : t('tutor.log.minutes', { n })
-      })),
-      () => form.followupMinutes, (v) => { form.followupMinutes = v; refresh(); }),
-
     textLine(t('tutor.log.covered'), form.covered, (v) => { form.covered = v; },
       target.lastSession?.covered
         ? t('tutor.log.lastTime', { text: target.lastSession.covered })
@@ -265,11 +238,4 @@ function resolveTarget(pairing, query, data, nowIso) {
 function previousWeek(iso, nowIso) {
   const candidate = new Date(Date.parse(iso) - 7 * 86400000).toISOString();
   return candidate <= nowIso ? candidate : nowIso;
-}
-
-function pickNearest(value, options) {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return options[options.length - 1];
-  return options.reduce((best, option) =>
-    Math.abs(option - n) < Math.abs(best - n) ? option : best, options[0]);
 }

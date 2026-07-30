@@ -229,10 +229,27 @@ no count against any person, and must never be shown to a tutor as a warning.
 in `hours.js` from session records. Nobody types an hour figure. If a tutor
 never opens the Hours screen, their hours are still correct.
 
-**Two hour totals, deliberately.** `contactMinutes` is time with the student;
-`volunteerMinutes` adds prep and follow-up. A school service-hours form is
-asking for volunteered time, so `volunteerMinutes` is the headline — a tutor who
-writes lesson notes on Friday night should not have to argue for them.
+**Every class held is credited a flat two hours** (`SESSION_CREDIT_MINUTES` in
+`hours.js`), whatever the clock said. That is the program's standard block: the
+class, the preparation before it and the notes after it. A tutor whose student
+got it in twenty minutes gave the same slot of their Saturday as one who ran
+ninety, and neither is asked to itemise it.
+
+**The log form therefore does not ask how long anything took.** No duration,
+prep or follow-up chips. Asking for minutes that change no total would be
+collecting data for its own sake (principle 2). Logging is one tap plus
+whatever the tutor chooses to type.
+
+**The printed record states the basis on its face**, and this is not optional.
+It is signed by an adult for NHS, the Congressional Award and the President's
+Volunteer Service Award, so it says "N classes × 2 hours" and says plainly that
+individual class lengths are not separately measured. A record showing two
+hours while implying two hours were measured would ask somebody to attest to
+something nobody checked. Never remove that line.
+
+`contactMinutes` survives as the recorded class time for historical rows and
+CSV columns. It deliberately does **not** add up to the total any more; the
+total is a count times a rate.
 
 **Month boundaries for hours are decided in the tutor's own time zone.** A
 session at 9pm on March 31 in New York is April 1 in UTC and a March session on
@@ -286,9 +303,10 @@ the common case is one tap on Save, "No" collapses the rest of the form, and
 on small screens the header and footer stand down so the Save button clears
 the fold. Changing the spacing on that screen means re-measuring it.
 
-**The two-hour cap lives in `store.logSession`**, not only in the form, so it
-holds however the entry point changes. `capSessionMinutes` trims follow-up
-first, then prep, and never the time actually spent with the student.
+**There is no longer an hours cap**, because there is nothing to cap: a class
+is worth two hours or nothing. `clampRecordedMinutes` only keeps a stored
+number believable (`MAX_RECORDED_MINUTES`) so a slipped thumb on a CSV import
+cannot put "600 minutes" in a student's history.
 
 **`#/tutor/student/:id` is written for handover.** The session history is the
 body of the page, not an appendix, because when a tutor leaves the only

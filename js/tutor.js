@@ -230,15 +230,21 @@ export function nextClassOverall(tutorId, data, { asOfIso }) {
  * ------------------------------------------------------------------ */
 
 /**
- * A tutor's hours split the way a verification form asks for them.
+ * A tutor's hours, and the basis they were computed on.
  *
- * `teaching` is time with the student; `prep` and `followup` are the work
- * around it. All three are reported because a supervisor signing a form is
- * entitled to see what the total is made of.
+ * The total is classes held x the program's standard credit, so the figures a
+ * supervisor is entitled to see are the count, the rate and the product —
+ * not a teaching/prep/follow-up split, which no longer adds up to anything.
+ * `classTime` is the real measured time with the student, reported alongside
+ * so the record can say what was counted as well as what it came to.
  */
 export function hourBreakdown(tutorId, { sessions, pairings }, range = {}) {
   const totals = computeHours(sessions, pairings, { ...range, tutorId });
   return {
+    creditMinutesPerSession: totals.creditMinutesPerSession,
+    classTimeMinutes: totals.contactMinutes,
+    classTimeHours: toRoundedHours(totals.contactMinutes),
+    /* Retained so historical exports keep their columns; no longer summed. */
     teachingMinutes: totals.contactMinutes,
     prepMinutes: totals.prepMinutes,
     followupMinutes: totals.followupMinutes,

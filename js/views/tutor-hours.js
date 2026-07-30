@@ -83,13 +83,12 @@ function headline(label, hours) {
 
 function breakdown(totals) {
   return el('section', { class: 'card breakdown' },
-    el('h2', { class: 'card__title', text: t('tutor.hours.total') }),
+    el('h2', { class: 'card__title', text: t('tutor.hours.breakdownTitle') }),
     el('div', { class: 'breakdown__grid' },
-      part(t('tutor.hours.teaching'), totals.teachingHours),
-      part(t('tutor.hours.prep'), totals.prepHours),
-      part(t('tutor.hours.followup'), totals.followupHours),
-      part(t('tutor.hours.total'), totals.totalHours, true)
+      part(t('tutor.hours.sessions'), totals.sessionCount, { hours: false }),
+      part(t('tutor.hours.credited'), totals.totalHours, { strong: true })
     ),
+    el('p', { class: 'small faint', text: t('tutor.hours.basis') }),
     el('p', { class: 'small faint' },
       `${t('tutor.hours.sessions')}: ${totals.sessionCount} · `,
       `${t('tutor.hours.students')}: ${totals.studentIds.length}`
@@ -97,9 +96,17 @@ function breakdown(totals) {
   );
 }
 
-function part(label, hours, strong = false) {
+/**
+ * One figure in the breakdown.
+ *
+ * `hours` decides the unit, because this grid now mixes a count of classes
+ * with a number of hours and printing "16 h" for sixteen classes would be a
+ * lie on a document somebody signs.
+ */
+function part(label, value, { strong = false, hours = true } = {}) {
   return el('div', { class: `breakdown__part${strong ? ' is-total' : ''}` },
-    el('span', { class: 'breakdown__value tnum', text: formatHours(hours) }),
+    el('span', { class: 'breakdown__value tnum',
+      text: hours ? `${formatHours(value)} ${t('tutor.hours.hoursShort')}` : String(value) }),
     el('span', { class: 'breakdown__label', text: label })
   );
 }
@@ -175,18 +182,12 @@ function sessionTable(rows, tutor, locale) {
         el('thead', {}, el('tr', {},
           el('th', { text: t('tutor.hours.date') }),
           el('th', { text: t('tutor.hours.student') }),
-          el('th', { text: t('tutor.hours.duration') }),
-          el('th', { text: t('tutor.hours.prep') }),
-          el('th', { text: t('tutor.hours.followup') }),
-          el('th', { text: t('tutor.hours.total') })
+          el('th', { text: t('tutor.hours.credited') })
         )),
         el('tbody', {}, rows.map((row) =>
           el('tr', {},
             el('td', { text: stampInZone(row.session.scheduledAt, tutor.timezone, { locale, weekday: true }) }),
             el('td', { text: row.studentName }),
-            el('td', { class: 'tnum', text: String(row.teachingMinutes) }),
-            el('td', { class: 'tnum', text: String(row.prepMinutes) }),
-            el('td', { class: 'tnum', text: String(row.followupMinutes) }),
             el('td', { class: 'tnum', text: formatHours(toRoundedHours(row.minutes)) })
           )
         ))
@@ -236,12 +237,14 @@ function certificate(tutor, data, rows, totals, selected, nowIso, locale) {
       el('h2', { text: t('tutor.cert.summary') }),
       el('table', { class: 'cert__summary' },
         el('tbody', {},
-          summaryRow(t('tutor.hours.teaching'), totals.teachingHours),
-          summaryRow(t('tutor.hours.prep'), totals.prepHours),
-          summaryRow(t('tutor.hours.followup'), totals.followupHours),
-          summaryRow(t('tutor.hours.total'), totals.totalHours, true)
+          summaryRow(t('tutor.hours.sessions'), totals.sessionCount, { hours: false }),
+          summaryRow(t('tutor.hours.credited'), totals.totalHours, { strong: true })
         )
       ),
+      el('p', { class: 'cert__basis', text: t('tutor.cert.basis', {
+        count: totals.sessionCount,
+        hours: (totals.creditMinutesPerSession / 60)
+      }) }),
       el('p', { class: 'cert__note' },
         `${t('tutor.hours.sessions')}: ${totals.sessionCount} · ${t('tutor.hours.students')}: ${totals.studentIds.length}`
       )
@@ -254,17 +257,11 @@ function certificate(tutor, data, rows, totals, selected, nowIso, locale) {
             el('thead', {}, el('tr', {},
               el('th', { text: t('tutor.hours.date') }),
               el('th', { text: t('tutor.hours.student') }),
-              el('th', { text: t('tutor.hours.teaching') }),
-              el('th', { text: t('tutor.hours.prep') }),
-              el('th', { text: t('tutor.hours.followup') }),
-              el('th', { text: t('tutor.hours.total') })
+              el('th', { text: t('tutor.hours.credited') })
             )),
             el('tbody', {}, rows.map((row) => el('tr', {},
               el('td', { text: dateKeyInZone(row.session.scheduledAt, zone) }),
               el('td', { text: row.studentName }),
-              el('td', { class: 'tnum', text: String(row.teachingMinutes) }),
-              el('td', { class: 'tnum', text: String(row.prepMinutes) }),
-              el('td', { class: 'tnum', text: String(row.followupMinutes) }),
               el('td', { class: 'tnum', text: formatHours(toRoundedHours(row.minutes)) })
             )))
           )
@@ -291,10 +288,11 @@ function fact(label, value) {
   return frag;
 }
 
-function summaryRow(label, hours, strong = false) {
+function summaryRow(label, value, { strong = false, hours = true } = {}) {
   return el('tr', { class: strong ? 'is-total' : '' },
     el('th', { scope: 'row', text: label }),
-    el('td', { class: 'tnum', text: `${formatHours(hours)} ${t('tutor.hours.hoursShort')}` })
+    el('td', { class: 'tnum',
+      text: hours ? `${formatHours(value)} ${t('tutor.hours.hoursShort')}` : String(value) })
   );
 }
 

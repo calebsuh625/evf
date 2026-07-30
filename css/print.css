@@ -148,3 +148,14 @@ input {
 }
 
 a { color: #000 !important; text-decoration: none !important; }
+
+/* The crediting basis is part of what the signer is attesting to, so it
+   prints at full contrast alongside the summary rather than as fine print. */
+.cert__basis {
+  margin: 8px 0 0;
+  padding: 6px 8px;
+  border: 1pt solid #000;
+  font-size: 9.5pt;
+  line-height: 1.4;
+  color: #000;
+}

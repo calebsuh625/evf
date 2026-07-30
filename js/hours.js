@@ -8,16 +8,28 @@
  * student. Hours are derived from those records afterwards. If a tutor never
  * opens the Hours screen, their hours are still correct.
  *
+ * **Every class that happened is credited at a flat two hours**
+ * (`SESSION_CREDIT_MINUTES`), whatever the clock said. That is the program's
+ * standard block: a class plus the preparation before it and the notes after
+ * it, which is what an hour of this volunteering actually costs somebody.
+ * Nobody has to itemise their Friday night, and nobody is worse off for a
+ * class that ran short because the student got it quickly.
+ *
  * Two totals, because they answer different questions:
  *
- *   contactMinutes    time spent with the student (durationMinutes)
- *   volunteerMinutes  contact + prep + follow-up
+ *   contactMinutes    time actually spent with the student
+ *   volunteerMinutes  the credited figure — held classes x 2 hours
  *
  * A school service-hours form is asking for volunteered time, so
- * volunteerMinutes is the headline figure. Prep and follow-up are real
- * donated work and a tutor who writes lesson notes on Friday night should
- * not have to argue for them. contactMinutes is kept alongside for anyone
- * who needs to report contact time specifically.
+ * volunteerMinutes is the headline. contactMinutes is kept alongside and is
+ * still the real measured class time, because the printed record has to be
+ * able to say what it is counting and on what basis.
+ *
+ * That disclosure is not optional. The record is signed by an adult for NHS,
+ * the Congressional Award and the President's Volunteer Service Award, so it
+ * states the standard credit on its face. A record that showed two hours
+ * while implying two hours were measured would be asking somebody to attest
+ * to something nobody checked.
  *
  * Sessions with `occurred: false` contribute nothing and are counted
  * separately. A session that did not happen is a neutral fact about a
@@ -32,6 +44,15 @@ import { monthKeyInZone, dateKeyInZone } from './time.js';
 
 /** Granularity for reported totals. Most hour forms want quarter hours. */
 export const ROUNDING_MINUTES = 15;
+
+/**
+ * What one held class is worth. Flat, deliberately.
+ *
+ * Set by the program, not measured per session. Changing this number changes
+ * every historical total, which is correct — it is a crediting policy, not a
+ * record of what a clock said.
+ */
+export const SESSION_CREDIT_MINUTES = 120;
 
 /** Map pairing id -> pairing, for resolving a session to its people. */
 export function indexPairings(pairings) {
@@ -49,14 +70,17 @@ export function sessionContactMinutes(session) {
   return minutesField(session.durationMinutes);
 }
 
-/** Contact + prep + follow-up. Zero unless the session occurred. */
-export function sessionVolunteerMinutes(session) {
+/**
+ * The credited figure: a flat two hours for a class that happened, nothing
+ * for one that did not.
+ *
+ * Deliberately ignores durationMinutes, prepMinutes and followupMinutes. A
+ * tutor who runs forty minutes because the student understood it quickly has
+ * given the same slot of their Saturday as one who ran ninety.
+ */
+export function sessionVolunteerMinutes(session, credit = SESSION_CREDIT_MINUTES) {
   if (!session || session.occurred !== true) return 0;
-  return (
-    minutesField(session.durationMinutes) +
-    minutesField(session.prepMinutes) +
-    minutesField(session.followupMinutes)
-  );
+  return credit;
 }
 
 /** Minutes to hours, rounded to the nearest quarter hour. */
@@ -163,6 +187,9 @@ export function computeHours(sessions, pairings, filter = {}) {
   const contactHours = toRoundedHours(contactMinutes);
 
   return {
+    // The basis travels with the total, so every screen and the printed
+    // record say the same thing about where the number came from.
+    creditMinutesPerSession: SESSION_CREDIT_MINUTES,
     occurredCount,
     missedCount,
     contactMinutes,

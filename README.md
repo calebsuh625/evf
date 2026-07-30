@@ -17,9 +17,11 @@ The demo loads invented data and says so, loudly, at the top of every screen.
 
 **For tutors** — the next class in both time zones with the correct weekday at
 each end, the homework they set last time, a card per student, and their hours.
-Logging a session is one tap from the dashboard, everything on chips, and it
-completes in under twenty seconds on a phone without scrolling. Hours export as
-a printable **volunteer service record** ready for a supervisor's signature —
+Logging a class is one tap from the dashboard — did it happen, and optionally
+what you covered. It never asks how long anything took, because **every class
+held is credited a flat two hours**: the class, the prep before it and the notes
+after it. Hours export as a printable **volunteer service record** ready for a
+supervisor's signature, stating that basis on its face —
 NHS, the Congressional Award and the President's Volunteer Service Award all ask
 for the same things and the printout carries all of them.
 

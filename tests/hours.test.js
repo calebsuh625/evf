@@ -13,7 +13,8 @@ import {
   hoursByMonth,
   activeWeeks,
   pairingsNeedingCheckIn,
-  programTotals
+  programTotals,
+  SESSION_CREDIT_MINUTES
 } from '../js/hours.js';
 
 const NY = 'America/New_York';
@@ -56,10 +57,22 @@ describe('session minutes', () => {
     equal(sessionContactMinutes(session()), 60);
   });
 
-  it('adds prep and follow-up into volunteer time', () => {
+  it('credits a flat two hours however long the class ran', () => {
+    // The policy, pinned. A tutor whose student got it in twenty minutes has
+    // given the same slot of their Saturday as one who ran ninety, and the
+    // form never asks either of them how long it took.
+    for (const minutes of [20, 30, 60, 90, 150]) {
+      equal(
+        sessionVolunteerMinutes(session({ durationMinutes: minutes })),
+        SESSION_CREDIT_MINUTES,
+        `a ${minutes}-minute class`
+      );
+    }
+  });
+
+  it('ignores prep and follow-up, which are inside the credit', () => {
     const s = session({ durationMinutes: 60, prepMinutes: 15, followupMinutes: 10 });
-    equal(sessionContactMinutes(s), 60);
-    equal(sessionVolunteerMinutes(s), 85);
+    equal(sessionVolunteerMinutes(s), SESSION_CREDIT_MINUTES);
   });
 
   it('counts nothing for a session that did not happen', () => {
@@ -78,7 +91,7 @@ describe('session minutes', () => {
     for (const bad of [null, 'sixty', -30, 0, undefined, NaN]) {
       equal(sessionContactMinutes(session({ durationMinutes: bad })), 0, `duration ${String(bad)}`);
     }
-    equal(sessionVolunteerMinutes(session({ durationMinutes: 60, prepMinutes: 'ten' })), 60);
+    equal(sessionVolunteerMinutes(session({ durationMinutes: 60, prepMinutes: 'ten' })), SESSION_CREDIT_MINUTES);
     equal(sessionContactMinutes(null), 0);
     equal(sessionVolunteerMinutes(undefined), 0);
   });
@@ -186,9 +199,11 @@ describe('computeHours', () => {
     equal(r.occurredCount, 3);
     equal(r.contactMinutes, 180);
     equal(r.contactHours, 3);
-    equal(r.volunteerMinutes, 200); // + 15 prep/followup + 5 prep
-    equal(r.volunteerHours, 3.25);
-    equal(r.hoursLabel, '3.25');
+    // Credit is per class held, not per minute taught.
+    equal(r.volunteerMinutes, 3 * SESSION_CREDIT_MINUTES);
+    equal(r.volunteerHours, 3 * (SESSION_CREDIT_MINUTES / 60));
+    equal(r.hoursLabel, '6');
+    equal(r.creditMinutesPerSession, SESSION_CREDIT_MINUTES, 'the basis travels with the total');
   });
 
   it('reports prep and follow-up separately', () => {
@@ -233,8 +248,15 @@ describe('summarizeByTutor', () => {
   ];
 
   it('sorts by volunteer minutes, highest first', () => {
-    deepEqual(summarizeByTutor(sessions, PAIRINGS, tutors).map((r) => r.tutorId),
-      ['t2', 't1', 't3', 't4']);
+    // Now equivalent to "most classes held", since every class is worth the
+    // same. t1 held 3, t2 and t3 fewer, t4 none.
+    const rows = summarizeByTutor(sessions, PAIRINGS, tutors);
+    const minutes = rows.map((r) => r.volunteerMinutes);
+    deepEqual([...minutes].sort((a, b) => b - a), minutes, 'descending');
+    equal(rows[rows.length - 1].tutorId, 't4', 'the tutor with no sessions comes last');
+    for (const row of rows) {
+      equal(row.volunteerMinutes, row.occurredCount * SESSION_CREDIT_MINUTES);
+    }
   });
 
   it('includes tutors with no sessions rather than dropping them', () => {
@@ -244,7 +266,9 @@ describe('summarizeByTutor', () => {
   });
 
   it('prefers the name the tutor chose', () => {
-    equal(summarizeByTutor(sessions, PAIRINGS, tutors)[0].name, 'Blake');
+    const top = summarizeByTutor(sessions, PAIRINGS, tutors)[0];
+    equal(top.tutorId, 't1', 't1 holds the most classes');
+    equal(top.name, 'Avery', 'the preferred name, not the full one');
   });
 
   it('summarizeByStudent works the same way from the other side', () => {
@@ -270,7 +294,7 @@ describe('hoursByMonth', () => {
     const months = hoursByMonth(sessions, PAIRINGS, { tz: NY });
     deepEqual(months.map((m) => m.month), ['2026-02', '2026-03']);
     equal(months[1].occurredCount, 2);
-    equal(months[1].volunteerHours, 2);
+    equal(months[1].volunteerHours, 2 * (SESSION_CREDIT_MINUTES / 60));
   });
 
   it('assigns a late-evening session to the tutor\'s month, not UTC\'s', () => {
@@ -280,10 +304,10 @@ describe('hoursByMonth', () => {
     equal(hoursByMonth([late], PAIRINGS, { tz: 'UTC' })[0].month, '2026-04');
   });
 
-  it('includes prep and follow-up in the monthly figure', () => {
+  it('credits the month per class held, not per minute recorded', () => {
     const s = session({ durationMinutes: 60, prepMinutes: 15, followupMinutes: 15 });
-    equal(hoursByMonth([s], PAIRINGS, { tz: NY })[0].volunteerHours, 1.5);
-    equal(hoursByMonth([s], PAIRINGS, { tz: NY })[0].contactMinutes, 60);
+    equal(hoursByMonth([s], PAIRINGS, { tz: NY })[0].volunteerHours, SESSION_CREDIT_MINUTES / 60);
+    equal(hoursByMonth([s], PAIRINGS, { tz: NY })[0].contactMinutes, 60, 'recorded time is still reported');
   });
 
   it('omits months with nothing that happened', () => {
@@ -407,7 +431,7 @@ describe('programTotals', () => {
     const totals = programTotals(sessions, PAIRINGS, PEOPLE);
     equal(totals.occurredCount, 2);
     equal(totals.missedCount, 1);
-    equal(totals.volunteerHours, 3);
+    equal(totals.volunteerHours, 2 * (SESSION_CREDIT_MINUTES / 60));
     equal(totals.activeTutors, 2);
     equal(totals.rosteredTutors, 4);
     equal(totals.studentsReached, 2);
@@ -416,8 +440,12 @@ describe('programTotals', () => {
   });
 
   it('takes the median over tutors who actually tutored', () => {
-    // t1: 1h, t2: 2h. Tutors with no sessions must not drag it to 0.
-    equal(programTotals(sessions, PAIRINGS, PEOPLE).medianHoursPerTutor, 1.5);
+    // One class each, so both sit at the standard credit. Tutors with no
+    // sessions must not drag the median to 0.
+    equal(
+      programTotals(sessions, PAIRINGS, PEOPLE).medianHoursPerTutor,
+      SESSION_CREDIT_MINUTES / 60
+    );
   });
 
   it('survives an empty program', () => {
