@@ -7,10 +7,9 @@ It is a static site. There is no backend, no login, and no server holding
 children's names, schools, or guardian contacts. Everything runs in the browser,
 and the data lives in a JSON file the coordinator keeps.
 
-**Status:** The tutor side is built (dashboard, session logging, hours with a
-printable verification record, student pages, availability), the student and
-guardian side is built, and the matching engine and its coordinator screen are
-built. The remaining coordinator screens are still scaffolded.
+**Status:** Feature-complete for a first term. Tutors, students and guardians,
+and coordinators all have their screens; the matching engine, the hours
+exports, and the backup/restore path are all working.
 
 There is no login yet: a picker at the top right chooses whether you are
 looking as the coordinator or as a particular tutor, and it remembers.
@@ -39,10 +38,11 @@ configuration — the paths resolve correctly under a project subpath.
 
 ## Tests
 
-Open <http://localhost:8000/tests/test.html>. 378 unit tests covering the
+Open <http://localhost:8000/tests/test.html>. 449 unit tests covering the
 timezone math, the pairing scorer, the hour computation, CSV handling, the
-tutor-facing selectors, the matcher, the bilingual dictionary, asset
-provenance, and the store's migration, validation and export logic.
+tutor-facing selectors, the matcher, the admin figures, the chart geometry,
+the bilingual dictionary, asset provenance, and the store's migration,
+validation and export logic.
 
 A few of those read the browser's Resource Timing data and so only run in a
 browser; in Node they report as skipped rather than passing vacuously.
@@ -58,7 +58,7 @@ code:
 
 ```sh
 node -e "import('./tests/runner.js').then(async ({run}) => {
-  for (const f of ['time','matching','hours','csv','store','tutor','i18n','assets']) await import('./tests/'+f+'.test.js');
+  for (const f of ['time','matching','hours','csv','store','tutor','admin','i18n','assets']) await import('./tests/'+f+'.test.js');
   const r = await run(e => e.type==='fail' && console.log('FAIL', e.name, e.error));
   console.log(r); process.exit(r.failed ? 1 : 0);
 })"
@@ -154,6 +154,43 @@ whose availability has quietly drifted apart.
 **The system suggests; a human accepts.** Nothing is ever paired
 automatically.
 
+## For coordinators
+
+- **Overview** (`#/admin`) — pairings, tutors and students, hours this week,
+  month and term, and growth over time as an inline SVG chart. No charting
+  library: it is forty lines of arithmetic, and a CDN would be one more thing
+  that can fail from China.
+- **Needs attention** (`#/admin/attention`) — the screen worth building the
+  rest for. Pairings with nothing logged for two weeks, longest first;
+  students with no tutor; tutors with room; classes that did not happen. Every
+  row carries contact details, because the point is to go and ask.
+- **Matching** (`#/admin/matching`) — described above.
+- **Roster** (`#/admin/roster`) — everyone, filterable, with detail pages, inline
+  editing, and CSV import for bulk loading.
+- **Export** (`#/admin/export`) — one-click dated JSON backup, and CSVs of
+  everything.
+
+**Everything on these screens is computed.** Nobody is ever asked to fill
+something in so that an admin screen can show a number. A person's status is
+derived from their pairings every time it is displayed, never stored, so it
+cannot be stale.
+
+**Some things are deliberately absent**: no strike tracking, no suspensions,
+no compliance dashboards, no automated nagging. A tutor who has gone quiet for
+two weeks does not need a warning, they need someone to ask if they are all
+right — so the app surfaces the pairing and a phone number, and stops there.
+The reasoning is in [CLAUDE.md](CLAUDE.md).
+
+## Continuity
+
+The program has to survive any individual leaving, including whoever built it.
+
+Handing it over is two things: the JSON backup and the address of this page.
+Whoever takes over loads the file and has everything — there is no account to
+transfer, no password to hand on, and no server anybody has to keep paying
+for. Backup, wipe and restore is covered by a test that asserts the restored
+program is identical.
+
 ## Time zones
 
 The hardest part of the program, and the reason `js/time.js` exists.
@@ -211,6 +248,8 @@ js/
   hours.js          hour computation   — pure functions, no DOM
   csv.js            CSV parse/write    — pure functions, no DOM
   tutor.js          tutor-facing views — pure functions, no DOM
+  admin.js          coordinator figures — pure functions, no DOM
+  chart.js          chart geometry     — pure functions, no DOM
   selftest.js       the timezone assertions, as runnable scenarios
   i18n.js           English / Simplified Chinese
   views/            one module per screen

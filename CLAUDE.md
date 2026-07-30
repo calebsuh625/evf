@@ -59,6 +59,8 @@ js/
   hours.js          hour computation    — pure, no DOM
   csv.js            CSV parse/serialise — pure, no DOM
   tutor.js          tutor-facing selectors — pure, no DOM
+  admin.js          coordinator's computed figures — pure, no DOM
+  chart.js          line-chart geometry — pure, no DOM
   selftest.js       timezone assertions as runnable scenarios
   i18n.js           en / zh-Hans dictionary
   dom.js            small shared DOM helpers (not a framework — keep it small)
@@ -395,6 +397,78 @@ will not think to look for them: students nobody can take (with the specific
 fix), volunteers with capacity and no viable student (an unused volunteer does
 not complain, they drift away), and active pairings whose availability has
 drifted apart (nobody will mention it).
+
+## The admin screens
+
+`#/admin`, `#/admin/attention`, `#/admin/matching`, `#/admin/roster`,
+`#/admin/export`.
+
+**Rule: everything on these screens is computed.** No admin screen may be
+populated by asking somebody to fill something in. Every figure is derived
+from records people keep for their own reasons — a tutor logging a class so
+they remember what they covered, a person stating when they are free so they
+can be matched. If a number cannot be computed from existing records, the
+answer is that the program does not get that number, **not** that volunteers
+get a new form.
+
+`tests/admin.test.js` states this at the top: if an assertion there ever needs
+a new field on a person or a session to pass, that is the signal a screen is
+about to start asking volunteers for something.
+
+**Status is computed, never stored.** `rosterRows` derives paired / unpaired /
+not-accepting / inactive from the pairings table every time it is asked. A
+stored status is a field somebody has to remember to update, and it is wrong
+the moment they forget.
+
+**`#/admin/attention` is the highest-value screen.** It answers "which pairings
+have quietly stopped?", which nobody reports: the tutor assumes the student is
+busy, the student assumes the tutor is busy, and a pairing can be over for two
+months before anyone says so. Every row carries contact details because the
+intended next step is a human writing to another human.
+
+**A pairing that never met is measured from when it started**, so a
+pairing created yesterday does not appear on day one.
+
+**Month and week boundaries resolve in the admin zone, not UTC.** There is a
+test pinning that somebody who joined at `2026-06-01T00:00Z` belongs to *May*
+on a chart a New York coordinator is reading.
+
+**Removing a person is refused when they have logged sessions.** Those are
+volunteer hours a real person earned, and a coordinator tidying a list should
+not be able to delete them with one click. The store raises an error with a
+`has-history` code and the screen offers marking them inactive instead.
+
+**No charting library.** `js/chart.js` is about forty lines of arithmetic
+returning coordinates and path strings; the view turns them into inline SVG.
+Any library would be a CDN dependency or a build step, and this app can afford
+neither. The geometry is a separate module because an off-by-one in a y-scale
+is invisible on screen and obvious in an assertion.
+
+## What the admin screens will never have
+
+Requests for these will come. The answer is no, and this is the reason.
+
+**Strike tracking. Suspension management. Compliance dashboards. Automated
+nagging.**
+
+Principle 3 is not a preference about tone, it is a structural decision. Every
+one of these turns a volunteer relationship into a managed one, and the people
+being managed are unpaid teenagers and children. A tutor who misses two weeks
+does not need a warning; they need somebody to ask whether they are all right.
+
+Specifically:
+
+- `quietPairings` surfaces a pairing so a human can start a conversation. It
+  stores nothing against anybody and must never acquire a threshold that
+  triggers an action.
+- `recentMisses` is per-session and deliberately not keyed by person. There is
+  a test asserting its shape, because a per-person tally is a strike count
+  with a friendlier name.
+- Nothing anywhere sends a message automatically, and nothing should.
+
+If a coordinator genuinely cannot run the program without one of these, the
+problem is the size of the program or the number of coordinators, and the fix
+is not in this codebase.
 
 ## The self-test panel
 

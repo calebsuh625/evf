@@ -407,3 +407,121 @@ body[data-role="tutor"] .role-picker__select {
 
 .match-stale { border-left: 3px solid var(--line); }
 .match-stale__who { margin: 0 0 2px; }
+
+/* ------------------------------------------------------------------ *
+ * Admin
+ * ------------------------------------------------------------------ */
+
+.admin-computed {
+  margin-top: var(--sp-6);
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--line);
+  max-width: 62ch;
+}
+
+/* Overview */
+
+.admin-hours { margin-top: var(--sp-4); }
+.admin-hours__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: var(--sp-3);
+}
+.admin-hours__cell { padding: var(--sp-3); background: var(--paper-2); border-radius: var(--r-md); }
+.admin-hours__cell.is-total { background: var(--accent-soft); }
+.admin-hours__value { display: block; font-size: 1.5rem; font-weight: 680; font-variant-numeric: tabular-nums; }
+.admin-hours__label { font-size: .8125rem; color: var(--ink-soft); }
+
+.admin-growth { margin-top: var(--sp-4); }
+.admin-growth__legend { display: flex; flex-wrap: wrap; gap: var(--sp-4); margin: var(--sp-3) 0 var(--sp-1); font-size: .875rem; }
+.admin-growth__key { display: inline-flex; align-items: center; gap: var(--sp-2); }
+.admin-growth__swatch { width: 12px; height: 3px; border-radius: 2px; }
+.admin-growth__key.is-students .admin-growth__swatch { background: var(--accent); }
+.admin-growth__key.is-tutors .admin-growth__swatch { background: var(--good); }
+.admin-growth__chart { overflow-x: auto; }
+
+.chart { display: block; width: 100%; height: auto; }
+.chart__grid { stroke: var(--line); stroke-width: 1; }
+.chart__tick, .chart__label { fill: var(--ink-faint); font-size: 11px; font-family: var(--font); }
+.chart__line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.chart__line.is-students { stroke: var(--accent); }
+.chart__line.is-tutors { stroke: var(--good); }
+.chart__area { stroke: none; opacity: .12; }
+.chart__area.is-students { fill: var(--accent); }
+.chart__area.is-tutors { fill: var(--good); }
+.chart__dot.is-students { fill: var(--accent); }
+.chart__dot.is-tutors { fill: var(--good); }
+.chart__bar { fill: var(--accent); opacity: .55; }
+
+/* Needs attention */
+
+.attention-clear { border-left: 3px solid var(--good); margin-bottom: var(--sp-4); }
+.attention-block { margin-bottom: var(--sp-6); }
+.attention-block.is-primary .attention-row { border-left: 3px solid var(--warn); }
+.attention-block__head { display: flex; align-items: center; gap: var(--sp-3); }
+.attention-block__head h2 { margin: 0; font-size: 1.0625rem; }
+
+.attention-list { margin: var(--sp-3) 0 var(--sp-3); padding: 0; list-style: none; display: flex; flex-direction: column; gap: var(--sp-2); }
+.attention-row {
+  display: flex; flex-wrap: wrap; gap: var(--sp-3);
+  padding: var(--sp-3);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
+.attention-row__lead { flex: 0 0 auto; min-width: 92px; font-size: .875rem; font-weight: 650; color: var(--ink-soft); }
+.attention-row__body { flex: 1 1 240px; display: flex; flex-direction: column; gap: 2px; }
+.attention-row__who { font-weight: 600; }
+.attention-name { color: var(--ink); text-decoration: none; }
+.attention-name:hover { text-decoration: underline; }
+.attention-contact { color: var(--ink-soft); }
+
+/* Roster */
+
+.roster-controls { margin-bottom: var(--sp-4); }
+.roster-filters { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); margin-bottom: var(--sp-3); }
+.roster-search { flex: 1 1 200px; min-width: 0; }
+.roster-select {
+  min-height: 44px; padding: var(--sp-1) var(--sp-2); font: inherit;
+  color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: var(--r-md);
+}
+.roster-actions { align-items: flex-start; gap: var(--sp-4); }
+.roster-new { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); }
+.roster-new__label { font-size: .8125rem; font-weight: 600; color: var(--ink-faint); }
+.roster-new__input { max-width: 180px; }
+.roster-import { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); }
+.roster-table a { color: var(--ink); }
+
+/* Person detail */
+
+.person-head { display: flex; align-items: flex-start; gap: var(--sp-3); margin-bottom: var(--sp-4); }
+.person-head h1 { margin: 0; }
+.person-head__actions { margin-left: auto; }
+.person-editor { margin-bottom: var(--sp-4); }
+.person-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--sp-3);
+  margin: var(--sp-3) 0;
+}
+.person-field { display: flex; flex-direction: column; gap: var(--sp-1); }
+.person-field.is-wide { grid-column: 1 / -1; }
+.person-field__label { font-size: .75rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-faint); }
+.person-pairing { padding: 2px 0; }
+
+/* Export */
+
+.export-panel.is-primary { border-left: 3px solid var(--good); }
+.export-panel.is-handover { border-left: 3px solid var(--accent); }
+.export-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--sp-2);
+  margin-top: var(--sp-3);
+}
+.export-grid .btn { width: 100%; }
+
+@media (max-width: 700px) {
+  .person-head__actions { margin-left: 0; width: 100%; }
+  .attention-row__lead { min-width: 0; }
+}

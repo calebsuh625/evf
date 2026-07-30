@@ -13,14 +13,11 @@ import {
 } from './i18n.js';
 import { el, clear, toast } from './dom.js';
 
-import { render as renderHome } from './views/home.js';
-import { render as renderTutors } from './views/tutors.js';
-import { render as renderStudents } from './views/students.js';
-import { render as renderPairings } from './views/pairings.js';
-import { render as renderLogSession } from './views/log-session.js';
-import { render as renderSessions } from './views/sessions.js';
-import { render as renderHours } from './views/hours.js';
-import { render as renderData } from './views/data.js';
+import { render as renderAdminOverview } from './views/admin-overview.js';
+import { render as renderAdminAttention } from './views/admin-attention.js';
+import { render as renderAdminRoster } from './views/admin-roster.js';
+import { render as renderAdminPerson } from './views/admin-person.js';
+import { render as renderAdminExport } from './views/admin-export.js';
 import { render as renderSettings } from './views/settings.js';
 import { render as renderSelfTest } from './views/selftest.js';
 import { render as renderTutorHome } from './views/tutor-home.js';
@@ -43,17 +40,15 @@ import { render as renderNotFound } from './views/not-found.js';
  * A `:param` segment binds into ctx.params.
  */
 const ROUTES = [
-  // Coordinator
-  { path: '/',         key: 'nav.home',     nav: ['admin'], render: renderHome },
-  { path: '/tutors',   key: 'nav.tutors',   nav: ['admin'], render: renderTutors },
-  { path: '/students', key: 'nav.students', nav: ['admin'], render: renderStudents },
-  { path: '/pairings', key: 'nav.pairings', nav: ['admin'], render: renderPairings },
-  { path: '/log',      key: 'nav.log',      nav: ['admin'], render: renderLogSession },
-  { path: '/sessions', key: 'nav.sessions', nav: ['admin'], render: renderSessions },
-  { path: '/hours',    key: 'nav.hours',    nav: ['admin'], render: renderHours },
-  { path: '/data',     key: 'nav.data',     nav: ['admin'], render: renderData },
-  { path: '/settings', key: 'nav.settings', nav: ['admin'], render: renderSettings },
-  { path: '/admin/matching', key: 'match.nav', nav: ['admin'], render: renderMatching },
+  // Coordinator. Everything on these screens is computed — see js/admin.js.
+  { path: '/',                key: 'admin.nav.overview',  nav: [],        render: renderAdminOverview },
+  { path: '/admin',           key: 'admin.nav.overview',  nav: ['admin'], render: renderAdminOverview },
+  { path: '/admin/attention', key: 'admin.nav.attention', nav: ['admin'], render: renderAdminAttention },
+  { path: '/admin/matching',  key: 'match.nav',           nav: ['admin'], render: renderMatching },
+  { path: '/admin/roster',    key: 'admin.nav.roster',    nav: ['admin'], render: renderAdminRoster },
+  { path: '/admin/roster/:personId', key: 'admin.nav.roster', nav: [],    render: renderAdminPerson },
+  { path: '/admin/export',    key: 'admin.nav.export',    nav: ['admin'], render: renderAdminExport },
+  { path: '/settings',        key: 'nav.settings',        nav: ['admin'], render: renderSettings },
 
   // Tutor
   { path: '/tutor',                   key: 'tutor.nav.home',         nav: ['tutor'], role: 'tutor', render: renderTutorHome },
@@ -282,7 +277,7 @@ function needsPerson(role) {
 function homeFor(role) {
   if (role === 'tutor') return '/tutor';
   if (role === 'student' || role === 'guardian') return '/student';
-  return '/';
+  return '/admin';
 }
 
 /** One broken screen should not take down the shell. */
@@ -290,8 +285,8 @@ function renderRenderError(err) {
   return el('section', { class: 'placeholder' },
     el('h2', { text: 'This screen failed to render' }),
     el('p', { class: 'muted', text: String(err?.message ?? err) }),
-    el('p', { class: 'small faint', text: 'Your data is untouched. The Data screen still works if you need to export.' }),
-    el('a', { class: 'btn', href: '#/data', text: t('nav.data') })
+    el('p', { class: 'small faint', text: 'Your data is untouched. The export screen still works if you need a backup.' }),
+    el('a', { class: 'btn', href: '#/admin/export', text: t('admin.nav.export') })
   );
 }
 

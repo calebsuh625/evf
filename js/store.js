@@ -1450,6 +1450,66 @@ export function deleteSession(sessionId) {
   }));
 }
 
+/**
+ * Add a person to the roster.
+ *
+ * @param {'tutor'|'student'} role
+ * @param {object} fields
+ */
+export function addPerson(role, fields = {}) {
+  if (!ROLES.includes(role)) throw new TypeError(`addPerson: unknown role "${role}".`);
+  const person = role === 'tutor' ? newTutor(fields) : newStudent(fields);
+  update((current) => ({ ...current, people: [...current.people, person] }));
+  return person;
+}
+
+/**
+ * Remove somebody from the roster.
+ *
+ * Refuses when they have logged sessions, because those sessions are somebody's
+ * volunteer hours and a coordinator tidying a list should not be able to delete
+ * them with one click. Deactivating is the right move there, and the error says
+ * so. Availability and pairings that carry no history go with the person.
+ */
+export function removePerson(personId) {
+  const data = getState();
+  const person = data.people.find((p) => p.id === personId);
+  if (!person) return { removed: false, reason: 'not-found' };
+
+  const theirPairings = data.pairings.filter(
+    (p) => p.tutorId === personId || p.studentId === personId
+  );
+  const pairingIds = new Set(theirPairings.map((p) => p.id));
+  const loggedSessions = data.sessions.filter(
+    (s) => pairingIds.has(s.pairingId) && s.loggedAt != null
+  );
+
+  if (loggedSessions.length > 0) {
+    const error = new Error(
+      `${person.name || personId} has ${loggedSessions.length} logged session(s). ` +
+      'Removing them would delete volunteer hours somebody earned. Mark them inactive instead.'
+    );
+    error.code = 'has-history';
+    error.sessions = loggedSessions.length;
+    throw error;
+  }
+
+  update((current) => ({
+    ...current,
+    people: current.people.filter((p) => p.id !== personId),
+    pairings: current.pairings.filter((p) => !pairingIds.has(p.id)),
+    sessions: current.sessions.filter((s) => !pairingIds.has(s.pairingId)),
+    availability: current.availability.filter((a) => a.personId !== personId)
+  }));
+
+  return { removed: true, pairings: theirPairings.length };
+}
+
+/** Mark somebody active or inactive without touching their history. */
+export function setPersonActive(personId, active) {
+  return updatePerson(personId, { active: Boolean(active) });
+}
+
 /** Patch one person by id. */
 export function updatePerson(personId, patch) {
   update((current) => ({
