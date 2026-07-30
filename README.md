@@ -7,9 +7,12 @@ It is a static site. There is no backend, no login, and no server holding
 children's names, schools, or guardian contacts. Everything runs in the browser,
 and the data lives in a JSON file the coordinator keeps.
 
-**Status:** Phase 1. The shell, routing, bilingual UI, the full data layer, and
-the pure logic modules (timezone math, pairing, hours, CSV) are built and
-tested. The individual screens are scaffolded and land next.
+**Status:** The tutor-facing side is built — dashboard, session logging, hours
+with a printable verification record, student pages, and availability. The
+coordinator screens are still scaffolded.
+
+There is no login yet: a picker at the top right chooses whether you are
+looking as the coordinator or as a particular tutor, and it remembers.
 
 ## Running it
 
@@ -35,9 +38,10 @@ configuration — the paths resolve correctly under a project subpath.
 
 ## Tests
 
-Open <http://localhost:8000/tests/test.html>. 298 unit tests covering the
+Open <http://localhost:8000/tests/test.html>. 346 unit tests covering the
 timezone math, the pairing scorer, the hour computation, CSV handling, the
-bilingual dictionary, and the store's migration, validation and export logic.
+tutor-facing selectors, the bilingual dictionary, and the store's migration,
+validation and export logic.
 
 There is also a **[time zone self-test](#/selftest)** built into the app itself
 — open the running site and follow the link in the footer. It runs the timezone
@@ -50,7 +54,7 @@ code:
 
 ```sh
 node -e "import('./tests/runner.js').then(async ({run}) => {
-  for (const f of ['time','matching','hours','csv','store','i18n']) await import('./tests/'+f+'.test.js');
+  for (const f of ['time','matching','hours','csv','store','tutor','i18n']) await import('./tests/'+f+'.test.js');
   const r = await run(e => e.type==='fail' && console.log('FAIL', e.name, e.error));
   console.log(r); process.exit(r.failed ? 1 : 0);
 })"
@@ -79,6 +83,28 @@ together, with a `role`), `pairings`, `sessions`, and `availability`. Sessions
 belong to a pairing rather than to a tutor and student directly, because the
 pairing is the thing that persists over time. See [CLAUDE.md](CLAUDE.md) for the
 field-by-field shape and the reasoning.
+
+## For tutors
+
+The tutor screens are the ones that have to earn their keep, because the
+program only works if volunteers want to come back.
+
+- **Dashboard** — the next class in both time zones with the correct weekday
+  at each end, the homework you set last time, what you covered, a card per
+  student, and your hours. Classes you have not written up appear as a quiet
+  list: no counter, no streak, no deadline.
+- **Log a session** — one tap from the dashboard, pre-filled, everything on
+  chips. Built to complete in under twenty seconds on a phone without
+  scrolling, which is measured rather than assumed.
+- **My hours** — totals by term and all-time, split into teaching, prep and
+  follow-up, with every session listed. Exports as CSV, and prints as a
+  **volunteer service record** ready for a supervisor's signature: NHS, the
+  Congressional Award, and the President's Volunteer Service Award all ask for
+  the same things and the printout carries all of them.
+- **Student page** — the full session history, written so that a tutor taking
+  over can read it and know where to pick up.
+- **Availability** — recurring weekend windows in your own clock, echoed in
+  Beijing time, plus a plain "not taking new students right now" switch.
 
 ## Time zones
 
@@ -136,6 +162,7 @@ js/
   matching.js       pairing scorer     — pure functions, no DOM
   hours.js          hour computation   — pure functions, no DOM
   csv.js            CSV parse/write    — pure functions, no DOM
+  tutor.js          tutor-facing views — pure functions, no DOM
   selftest.js       the timezone assertions, as runnable scenarios
   i18n.js           English / Simplified Chinese
   views/            one module per screen

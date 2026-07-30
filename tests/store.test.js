@@ -93,7 +93,7 @@ function fixture(overrides = {}) {
 describe('emptyProgram', () => {
   it('is stamped with the current version', () => {
     equal(emptyProgram().version, SCHEMA_VERSION);
-    equal(SCHEMA_VERSION, 2);
+    equal(SCHEMA_VERSION, 3);
   });
 
   it('has every collection present and empty', () => {
@@ -169,15 +169,15 @@ describe('migrate', () => {
 
   it('reads a v1 file by its schemaVersion key', () => {
     const { applied } = migrate({ schemaVersion: 1, tutors: [], students: [], matches: [], sessions: [] });
-    deepEqual(applied, [1]);
+    deepEqual(applied, [1, 2]);
   });
 
   it('treats a file with no version field as version 0', () => {
     const { applied } = migrate({ tutors: [], students: [] });
-    deepEqual(applied, [0, 1]);
+    deepEqual(applied, [0, 1, 2]);
   });
 
-  it('migrates the full v0 chain through to v2', () => {
+  it('migrates the full v0 chain through to the current version', () => {
     const legacy = {
       programName: 'Old Program',
       adminTimeZone: 'America/Chicago',
@@ -192,8 +192,8 @@ describe('migrate', () => {
     };
 
     const { data, applied } = migrate(legacy);
-    deepEqual(applied, [0, 1]);
-    equal(data.version, 2);
+    deepEqual(applied, [0, 1, 2]);
+    equal(data.version, SCHEMA_VERSION);
     equal(data.program.name, 'Old Program');
 
     // tutors + students became one people table with roles
@@ -270,6 +270,33 @@ describe('migrate', () => {
     });
     deepEqual(data.pairings.map((p) => p.status), ['active', 'ended', 'active']);
     ok(PAIRING_STATUSES.includes(data.pairings[2].status));
+  });
+
+  it('gives v2 tutors an acceptingStudents flag, separate from active', () => {
+    const v2 = {
+      version: 2,
+      people: [
+        { id: 't1', role: 'tutor', name: 'Avery', active: true },
+        { id: 't2', role: 'tutor', name: 'Blake', active: false },
+        { id: 's1', role: 'student', name: 'Ming', active: true }
+      ],
+      pairings: [], sessions: [], availability: []
+    };
+    const { data, applied } = migrate(v2);
+    deepEqual(applied, [2]);
+    equal(data.people[0].acceptingStudents, true);
+    equal(data.people[1].acceptingStudents, true, 'a tutor on a break is still open to pairing later');
+    equal(data.people[1].active, false, 'and active is untouched');
+    equal(data.people[2].acceptingStudents, undefined, 'students have no such field');
+  });
+
+  it('does not overwrite an acceptingStudents flag that is already there', () => {
+    const { data } = migrate({
+      version: 2,
+      people: [{ id: 't1', role: 'tutor', name: 'Avery', active: true, acceptingStudents: false }],
+      pairings: [], sessions: [], availability: []
+    });
+    equal(data.people[0].acceptingStudents, false);
   });
 
   it('fills in collections a partial file omitted', () => {
@@ -512,8 +539,8 @@ describe('JSON export/import round trip', () => {
   it('migrates a v0 file on import', () => {
     const legacy = JSON.stringify({ programName: 'Legacy', tutors: [], students: [], matches: [], sessions: [] });
     const { data, migrated } = parseProgramJson(legacy);
-    deepEqual(migrated, [0, 1]);
-    equal(data.version, 2);
+    deepEqual(migrated, [0, 1, 2]);
+    equal(data.version, SCHEMA_VERSION);
     equal(data.program.name, 'Legacy');
   });
 

@@ -8,9 +8,11 @@
     "dateLineEdgeCase": "pair_12 — tutor free Sat 20:00-22:00 America/Los_Angeles, student free Sun 11:00-13:00 Asia/Shanghai. Same hour, two different calendar days.",
     "twoStudentsOneIdealTutor": "p_s06 and p_s19 have identical goals, level and availability. Only p_t05 fits either, and p_t05 caps at one student.",
     "noDstTutor": "p_t07 is in America/Phoenix, which never changes clocks.",
+    "unloggedSessions": "The final weekend of pair_01, pair_04, pair_09 and pair_12 is scheduled but not logged (occurred: null, loggedAt: null) — the tutor dashboard nudge points at these.",
+    "notAcceptingStudents": "p_t01, p_t04, p_t05, p_t06, p_t09 and p_t12 have acceptingStudents false, which is separate from being inactive.",
     "midnightSpanningAvailability": "Students in band E are free 22:00-01:00 Asia/Shanghai, a window that crosses local midnight."
   },
-  "version": 2,
+  "version": 3,
   "exportedAt": "2026-07-27T00:00:00.000Z",
   "program": {
     "name": "Weekend Tutoring",
@@ -50,6 +52,7 @@
         "intermediate"
       ],
       "maxStudents": 2,
+      "acceptingStudents": false,
       "bio": "Heritage Mandarin speaker. Happy to explain a new word in Chinese first, then in English.",
       "meetingLink": "https://meet.example.org/demo-avery-alpha",
       "createdAt": "2026-04-18T14:00:00.000Z"
@@ -76,6 +79,7 @@
         "advanced"
       ],
       "maxStudents": 2,
+      "acceptingStudents": true,
       "bio": "Prefers conversation practice over grammar drilling.",
       "meetingLink": "https://meet.example.org/demo-blake-beta",
       "createdAt": "2026-04-18T14:00:00.000Z"
@@ -102,6 +106,7 @@
         "advanced"
       ],
       "maxStudents": 3,
+      "acceptingStudents": true,
       "bio": "Runs the maths club. Likes a student who asks why.",
       "meetingLink": "https://meet.example.org/demo-corin-gamma",
       "createdAt": "2026-04-18T14:00:00.000Z"
@@ -127,6 +132,7 @@
         "elementary"
       ],
       "maxStudents": 2,
+      "acceptingStudents": false,
       "bio": "First term volunteering. Patient with beginners.",
       "meetingLink": "https://meet.example.org/demo-devon-delta",
       "createdAt": "2026-04-18T14:00:00.000Z"
@@ -152,6 +158,7 @@
         "advanced"
       ],
       "maxStudents": 1,
+      "acceptingStudents": false,
       "bio": "Has room for one student and said so up front. Two students currently fit this slot.",
       "meetingLink": "https://meet.example.org/demo-ellis-epsilon",
       "createdAt": "2026-04-18T14:00:00.000Z"
@@ -177,6 +184,7 @@
         "intermediate"
       ],
       "maxStudents": 2,
+      "acceptingStudents": false,
       "bio": "",
       "meetingLink": "https://meet.example.org/demo-frankie-zeta",
       "createdAt": "2026-04-18T14:00:00.000Z"
@@ -203,6 +211,7 @@
         "advanced"
       ],
       "maxStudents": 3,
+      "acceptingStudents": true,
       "bio": "Arizona, so this tutor never changes clocks in March or November.",
       "meetingLink": "https://meet.example.org/demo-gale-eta",
       "createdAt": "2026-04-18T14:00:00.000Z"
@@ -229,6 +238,7 @@
         "intermediate"
       ],
       "maxStudents": 2,
+      "acceptingStudents": true,
       "bio": "Late Saturday nights suit them, which lands on Sunday morning in China.",
       "meetingLink": "https://meet.example.org/demo-harper-theta",
       "createdAt": "2026-04-18T14:00:00.000Z"
@@ -254,6 +264,7 @@
         "elementary"
       ],
       "maxStudents": 1,
+      "acceptingStudents": false,
       "bio": "",
       "meetingLink": "https://meet.example.org/demo-indigo-iota",
       "createdAt": "2026-04-18T14:00:00.000Z"
@@ -280,6 +291,7 @@
         "advanced"
       ],
       "maxStudents": 2,
+      "acceptingStudents": true,
       "bio": "",
       "meetingLink": "https://meet.example.org/demo-jules-kappa",
       "createdAt": "2026-04-18T14:00:00.000Z"
@@ -305,6 +317,7 @@
         "advanced"
       ],
       "maxStudents": 2,
+      "acceptingStudents": true,
       "bio": "",
       "meetingLink": "https://meet.example.org/demo-kit-lambda",
       "createdAt": "2026-04-18T14:00:00.000Z"
@@ -331,6 +344,7 @@
         "intermediate"
       ],
       "maxStudents": 1,
+      "acceptingStudents": false,
       "bio": "Paused for exam season. Not a problem and not a strike; expects to be back.",
       "meetingLink": "https://meet.example.org/demo-lennox-mu",
       "createdAt": "2026-04-18T14:00:00.000Z"
@@ -3330,13 +3344,13 @@
       "id": "ses_0050",
       "pairingId": "pair_04",
       "scheduledAt": "2026-07-19T12:00:00.000Z",
-      "occurred": true,
-      "durationMinutes": 90,
-      "prepMinutes": 20,
-      "followupMinutes": 5,
-      "covered": "Worked through one-step equations.",
-      "homework": "Five practice problems.",
-      "loggedAt": "2026-07-19T14:00:00.000Z"
+      "occurred": null,
+      "durationMinutes": null,
+      "prepMinutes": 0,
+      "followupMinutes": 0,
+      "covered": "",
+      "homework": "",
+      "loggedAt": null
     },
     {
       "id": "ses_0062",
@@ -3378,13 +3392,13 @@
       "id": "ses_0014",
       "pairingId": "pair_01",
       "scheduledAt": "2026-07-25T13:00:00.000Z",
-      "occurred": true,
-      "durationMinutes": 75,
-      "prepMinutes": 10,
-      "followupMinutes": 5,
-      "covered": "Went back over material from two weeks ago until it clicked.",
+      "occurred": null,
+      "durationMinutes": null,
+      "prepMinutes": 0,
+      "followupMinutes": 0,
+      "covered": "",
       "homework": "",
-      "loggedAt": "2026-07-25T14:45:00.000Z"
+      "loggedAt": null
     },
     {
       "id": "ses_0027",
@@ -3402,13 +3416,13 @@
       "id": "ses_0111",
       "pairingId": "pair_09",
       "scheduledAt": "2026-07-25T13:00:00.000Z",
-      "occurred": true,
-      "durationMinutes": 45,
-      "prepMinutes": 10,
+      "occurred": null,
+      "durationMinutes": null,
+      "prepMinutes": 0,
       "followupMinutes": 0,
-      "covered": "Reviewed last week's homework, then started on word problems.",
-      "homework": "Five practice problems.",
-      "loggedAt": "2026-07-25T14:15:00.000Z"
+      "covered": "",
+      "homework": "",
+      "loggedAt": null
     },
     {
       "id": "ses_0124",
@@ -3486,13 +3500,13 @@
       "id": "ses_0148",
       "pairingId": "pair_12",
       "scheduledAt": "2026-07-26T03:00:00.000Z",
-      "occurred": true,
-      "durationMinutes": 60,
+      "occurred": null,
+      "durationMinutes": null,
       "prepMinutes": 0,
-      "followupMinutes": 15,
-      "covered": "Talked through the homework that did not make sense.",
-      "homework": "Try the last two questions again.",
-      "loggedAt": "2026-07-26T04:30:00.000Z"
+      "followupMinutes": 0,
+      "covered": "",
+      "homework": "",
+      "loggedAt": null
     }
   ],
   "availability": [

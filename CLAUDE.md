@@ -58,9 +58,12 @@ js/
   matching.js       pairing scorer      — pure, no DOM
   hours.js          hour computation    — pure, no DOM
   csv.js            CSV parse/serialise — pure, no DOM
+  tutor.js          tutor-facing selectors — pure, no DOM
+  selftest.js       timezone assertions as runnable scenarios
   i18n.js           en / zh-Hans dictionary
   dom.js            small shared DOM helpers (not a framework — keep it small)
   views/            one module per screen, each exporting render(container, ctx)
+css/print.css       the volunteer-hour verification record (media="print")
 data/sample.json    committed demo dataset — synthetic only
 tests/test.html     browser test runner
 tests/*.test.js     unit tests: time, matching, hours, csv, store, i18n
@@ -239,6 +242,70 @@ state, so views call `store.summary()` and tests call `store.summary(fixture)`.
 `unpairedStudents()` counts a **paused** pairing as unpaired: somebody has to
 pick it back up. `tutorsWithCapacity()` respects each tutor's own `maxStudents`
 as a limit they set for themselves, not a target to fill.
+
+## The tutor screens
+
+`#/tutor`, `#/tutor/hours`, `#/tutor/availability`, `#/tutor/log/:pairingId`
+and `#/tutor/student/:studentId`. Everything a tutor reads or writes.
+
+**These have to be worth opening.** The whole program depends on volunteers
+choosing to come back, so every element on the dashboard is something the
+tutor wants — the next class in both clocks, the homework they set last time,
+what they covered — and the coordinator's numbers fall out of that as a
+byproduct (principles 1 and 2). Nothing on these screens exists to collect
+data.
+
+**The nudge is a list, never a counter.** `outstandingLogs()` returns rows and
+nothing else: no count, no streak, no deadline, no red badge. There is a test
+asserting the returned shape has exactly `session`, `pairing` and `student`,
+because the moment it grows a number somebody will render it as a score.
+
+**Logging a session has a hard budget**: under twenty seconds, thumb only, no
+scrolling, on a phone as small as 375x667. That is measured, not assumed —
+everything is a chip, every value is pre-filled from the scheduled session so
+the common case is one tap on Save, "No" collapses the rest of the form, and
+on small screens the header and footer stand down so the Save button clears
+the fold. Changing the spacing on that screen means re-measuring it.
+
+**The two-hour cap lives in `store.logSession`**, not only in the form, so it
+holds however the entry point changes. `capSessionMinutes` trims follow-up
+first, then prep, and never the time actually spent with the student.
+
+**`#/tutor/student/:id` is written for handover.** The session history is the
+body of the page, not an appendix, because when a tutor leaves the only
+honest answer to "where do I pick this up" is what was actually covered and
+what homework was set.
+
+**Availability is a recruiting tool, not a rota.** It only matters when a
+tutor wants another student, and `acceptingStudents` is separate from
+`active`: a tutor with a full plate is still very much active. Turning the
+toggle off changes nothing else.
+
+## The role picker
+
+There is no auth. `viewAs` is 'admin' or a person id in localStorage, and it
+is deliberately stored apart from program data — it is a fact about this
+browser, not about the program, and it must never travel inside an export.
+
+**`route.role` is navigation, not security.** It decides which screens make
+sense for the selected person. Nothing in this app is a permission check and
+none of it should ever be mistaken for one.
+
+## The hours export
+
+The feature that makes logging worth doing. A high schooler logs sessions
+because at the end of the year they need a signed sheet, so the printed record
+is treated as the point of the hours screen rather than a button in a corner.
+
+It renders into the page and is revealed by `css/print.css`, so `window.print()`
+needs no popup and there is no second code path that could disagree with what
+is on screen. NHS, the Congressional Award and the President's Volunteer
+Service Award all want the same things and the record carries all of them:
+volunteer, organisation, activity, period, hours split into teaching / prep /
+follow-up, the sessions behind the total, and signature lines.
+
+Print rules force black text — the on-screen component styles put table
+headers in a grey that prints almost invisibly.
 
 ## The self-test panel
 

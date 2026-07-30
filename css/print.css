@@ -1,0 +1,150 @@
+/*
+ * print.css — the volunteer hour verification record.
+ *
+ * Loaded with media="print", so none of this affects the screen.
+ *
+ * When a tutor prints the hours screen, everything the app uses to navigate
+ * disappears and what remains is a single self-contained document a
+ * supervisor can sign: who, what organisation, what activity, over what
+ * dates, hours broken down, the sessions behind them, and signature lines.
+ * That is what NHS, the Congressional Award and the President's Volunteer
+ * Service Award all ask for.
+ *
+ * Black on white with no backgrounds: printers and colour settings vary, and
+ * a form that arrives grey and unreadable is worse than no form.
+ */
+
+@page {
+  size: A4 portrait;
+  margin: 18mm 16mm;
+}
+
+html, body {
+  background: #fff !important;
+  color: #000 !important;
+  font-size: 11pt;
+  line-height: 1.4;
+}
+
+/* Everything that is chrome, or a control, or another screen. */
+.app-header,
+.app-footer,
+.toast,
+.nav,
+.role-picker,
+.lang-toggle,
+.view-head,
+.export-panel,
+.breakdown,
+.stat,
+.grid,
+.table-wrap,
+.card,
+.empty,
+.btn,
+button,
+select,
+input {
+  display: none !important;
+}
+
+/* The record itself is hidden on screen and revealed here. */
+.cert { display: block !important; }
+
+.cert__head {
+  padding-bottom: 6mm;
+  margin-bottom: 6mm;
+  border-bottom: 1.5pt solid #000;
+}
+.cert__title {
+  margin: 0 0 1mm;
+  font-size: 18pt;
+  letter-spacing: -.01em;
+}
+.cert__org { margin: 0; font-size: 12pt; }
+
+.cert__facts {
+  display: grid;
+  grid-template-columns: 34mm 1fr;
+  gap: 1.5mm 6mm;
+  margin: 0 0 7mm;
+}
+.cert__facts dt { font-weight: 700; }
+.cert__facts dd { margin: 0; }
+
+.cert__section { margin-bottom: 7mm; break-inside: avoid; }
+.cert__section h2 {
+  margin: 0 0 2.5mm;
+  font-size: 12pt;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  border-bottom: .5pt solid #000;
+  padding-bottom: 1mm;
+}
+
+/* Force black: the on-screen component styles put table headers in a light
+   grey that prints almost invisibly. */
+.cert th, .cert td, .cert dt, .cert dd { color: #000 !important; }
+
+.cert__summary { border-collapse: collapse; width: 100%; max-width: 110mm; }
+.cert__summary th,
+.cert__summary td {
+  padding: 1.5mm 4mm 1.5mm 0;
+  text-align: left;
+  font-size: 11pt;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.cert__summary td { text-align: right; font-variant-numeric: tabular-nums; }
+.cert__summary tr.is-total th,
+.cert__summary tr.is-total td {
+  font-size: 13pt;
+  font-weight: 700;
+  border-top: 1pt solid #000;
+  padding-top: 2mm;
+}
+
+.cert__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 9.5pt;
+}
+.cert__table th,
+.cert__table td {
+  padding: 1.2mm 2mm;
+  text-align: left;
+  border-bottom: .25pt solid #999;
+}
+.cert__table th {
+  font-size: 8.5pt;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  border-bottom: .75pt solid #000;
+}
+.cert__table td.tnum { text-align: right; font-variant-numeric: tabular-nums; }
+/* Repeat the header when the detail table runs over a page. */
+.cert__table thead { display: table-header-group; }
+.cert__table tr { break-inside: avoid; }
+
+.cert__note,
+.cert__footnote { font-size: 9pt; margin: 2mm 0 0; }
+.cert__footnote { margin-top: 8mm; font-style: italic; }
+
+.cert__verify { break-inside: avoid; margin-top: 10mm; }
+.cert__signatures {
+  display: grid;
+  grid-template-columns: 1fr 1fr 34mm;
+  gap: 8mm;
+  margin-top: 12mm;
+}
+.cert__sig-rule { border-bottom: .75pt solid #000; height: 0; }
+.cert__sig-label {
+  display: block;
+  margin-top: 1.5mm;
+  font-size: 8.5pt;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+a { color: #000 !important; text-decoration: none !important; }

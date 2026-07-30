@@ -1,0 +1,306 @@
+/* tutor.css — the tutor-facing screens. */
+
+/* Role picker */
+
+.role-picker { display: inline-flex; }
+.role-picker__select {
+  min-height: 36px;
+  padding: 2px var(--sp-2);
+  font: inherit;
+  font-size: .875rem;
+  color: var(--ink);
+  background: var(--paper-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+body[data-role="tutor"] .role-picker__select {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* Shared */
+
+.grid--two { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.plain-list { margin: var(--sp-1) 0 0; padding: 0; list-style: none; }
+
+.stat--hours { text-align: left; }
+.stat__unit {
+  margin-left: 2px;
+  font-size: .9375rem;
+  font-weight: 550;
+  color: var(--ink-faint);
+  letter-spacing: 0;
+}
+
+/* Next class */
+
+.next-class { margin-bottom: var(--sp-4); border-left: 3px solid var(--accent); }
+.next-class--empty { border-left-color: var(--line); }
+
+.next-class__who {
+  display: flex; align-items: center; gap: var(--sp-3);
+  margin-bottom: var(--sp-3);
+}
+.next-class__name {
+  font-size: 1.25rem; font-weight: 680;
+  color: var(--ink); text-decoration: none;
+}
+.next-class__name:hover { text-decoration: underline; }
+
+.next-class__clocks {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-4);
+  padding: var(--sp-4);
+  background: var(--paper-3);
+  border-radius: var(--r-md);
+}
+.next-class__clock { flex: 1 1 150px; }
+.next-class__eq { flex: none; font-size: 1.25rem; color: var(--ink-faint); }
+.next-class__weekday { font-size: 1rem; font-weight: 650; }
+.next-class__time {
+  font-size: 1.875rem; font-weight: 680; line-height: 1.15; letter-spacing: -.02em;
+}
+
+.next-class__actions { margin-top: var(--sp-4); }
+
+.next-class__last {
+  display: flex; flex-direction: column; gap: var(--sp-3);
+  margin-top: var(--sp-4); padding-top: var(--sp-4);
+  border-top: 1px solid var(--line);
+}
+.next-class__homework {
+  margin: 2px 0 0;
+  font-size: 1.0625rem;
+  font-weight: 550;
+}
+
+/* The nudge — a list, never a countdown */
+
+.nudge { margin-bottom: var(--sp-4); border-left: 3px solid var(--warn); }
+.nudge__list { margin: var(--sp-3) 0 0; padding: 0; list-style: none; }
+.nudge__item {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-3);
+  padding: var(--sp-2) 0;
+}
+.nudge__item + .nudge__item { border-top: 1px solid var(--line); }
+.nudge__when { font-size: .9375rem; font-weight: 550; }
+.nudge__who { flex: 1; font-size: .9375rem; color: var(--ink-soft); }
+
+/* Hours */
+
+.hours-block { margin-bottom: var(--sp-5); }
+
+.breakdown { margin-top: var(--sp-4); }
+.breakdown__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-3);
+}
+.breakdown__part {
+  padding: var(--sp-3);
+  background: var(--paper-2);
+  border-radius: var(--r-md);
+}
+.breakdown__part.is-total { background: var(--accent-soft); }
+.breakdown__value { display: block; font-size: 1.5rem; font-weight: 680; }
+.breakdown__label { font-size: .8125rem; color: var(--ink-soft); }
+
+.export-panel { margin-top: var(--sp-4); border-left: 3px solid var(--good); }
+.export-panel__actions { margin-top: var(--sp-3); }
+.period-select {
+  min-height: 44px; padding: var(--sp-2) var(--sp-3);
+  font: inherit; color: var(--ink);
+  background: var(--paper); border: 1px solid var(--line); border-radius: var(--r-md);
+}
+
+/* Student tiles */
+
+.students-block { margin-top: var(--sp-5); }
+.student-tile { display: flex; flex-direction: column; gap: var(--sp-2); }
+.student-tile__name {
+  font-size: 1.0625rem; font-weight: 650;
+  color: var(--ink); text-decoration: none;
+}
+.student-tile__name:hover { text-decoration: underline; }
+.student-tile__tags { gap: var(--sp-1); }
+.student-tile__row p { margin: 0; }
+.student-tile__covered {
+  padding: var(--sp-2);
+  background: var(--paper-2);
+  border-radius: var(--r-sm);
+}
+.student-tile__actions { margin-top: auto; padding-top: var(--sp-2); }
+
+/* Student page */
+
+.student-head {
+  display: flex; align-items: flex-start; gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+}
+.student-head h1 { margin: 0; }
+.student-head__actions { margin-left: auto; }
+.student-windows { margin-top: var(--sp-3); }
+
+.handover { border-left: 3px solid var(--accent); }
+.handover__body { display: flex; flex-direction: column; gap: var(--sp-3); margin-top: var(--sp-3); }
+.handover__body p { margin: 2px 0 0; }
+
+.history { margin: var(--sp-3) 0 0; padding: 0; list-style: none; }
+.history__item {
+  display: flex; flex-wrap: wrap; gap: var(--sp-3);
+  padding: var(--sp-3) 0;
+  border-top: 1px solid var(--line);
+}
+.history__item:first-child { border-top: none; }
+.history__item.is-missed { opacity: .65; }
+.history__when { flex: 0 0 auto; min-width: 130px; }
+.history__date { display: block; font-size: .9375rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.history__body { flex: 1 1 260px; }
+.history__covered { margin: 0 0 var(--sp-1); }
+.history__tag {
+  font-size: .75rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--ink-faint);
+}
+
+/* Availability */
+
+.accepting { display: flex; flex-direction: column; gap: var(--sp-2); margin-bottom: var(--sp-4); }
+.accepting.is-off { border-left: 3px solid var(--line); }
+.accepting.is-on { border-left: 3px solid var(--good); }
+
+.switch {
+  display: inline-flex; align-items: center; gap: var(--sp-3);
+  min-height: 44px; padding: 0;
+  font: inherit; font-weight: 600;
+  color: var(--ink); background: none; border: none; cursor: pointer;
+  text-align: left;
+}
+.switch__track {
+  flex: none; position: relative;
+  width: 48px; height: 28px;
+  background: var(--paper-3);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  transition: background .15s ease, border-color .15s ease;
+}
+.switch__thumb {
+  position: absolute; top: 2px; left: 2px;
+  width: 22px; height: 22px;
+  background: var(--paper);
+  border-radius: 50%;
+  box-shadow: 0 1px 2px rgba(0,0,0,.25);
+  transition: transform .15s ease;
+}
+.switch[aria-checked="true"] .switch__track { background: var(--good); border-color: var(--good); }
+.switch[aria-checked="true"] .switch__thumb { transform: translateX(20px); }
+
+.avail-list { display: flex; flex-direction: column; gap: var(--sp-3); margin: var(--sp-3) 0; }
+.avail-row {
+  padding: var(--sp-3);
+  background: var(--paper-2);
+  border-radius: var(--r-md);
+}
+.avail-row__controls { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); }
+.avail-row__day { min-height: 44px; padding: var(--sp-1) var(--sp-2); font: inherit;
+  color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: var(--r-md); }
+.avail-row__time { min-height: 44px; }
+.avail-row__dash { color: var(--ink-faint); }
+.avail-row__echo { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); margin-top: var(--sp-2); }
+.avail-actions { margin-top: var(--sp-3); }
+
+/* ------------------------------------------------------------------ *
+ * Log a session
+ *
+ * Sized to fit a 390x664 phone viewport with no scrolling. Every tap target
+ * is at least 44px; the text inputs sit last so the keyboard covers nothing
+ * that still needs a tap.
+ * ------------------------------------------------------------------ */
+
+.log-head { display: flex; align-items: flex-start; gap: var(--sp-3); margin-bottom: var(--sp-3); }
+.log-head__back {
+  display: grid; place-items: center;
+  width: 40px; height: 40px; flex: none;
+  font-size: 1.25rem; color: var(--ink); text-decoration: none;
+  border-radius: var(--r-md);
+}
+.log-head__back:hover { background: var(--paper-3); }
+.log-head__title { margin: 0; font-size: 1.25rem; }
+.log-head__sub { margin: 0; }
+
+.log-form { display: flex; flex-direction: column; gap: var(--sp-3); }
+
+.log-field { display: flex; flex-direction: column; gap: var(--sp-1); }
+.log-field__label {
+  font-size: .75rem; font-weight: 600;
+  letter-spacing: .04em; text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.log-chips { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+
+.chip {
+  flex: 1 1 auto;
+  min-width: 56px; min-height: 48px;
+  padding: var(--sp-2) var(--sp-3);
+  font: inherit; font-size: 1rem; font-weight: 600;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1.5px solid var(--line);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  transition: background .1s ease, border-color .1s ease, color .1s ease;
+}
+.chip:hover { background: var(--paper-3); }
+.chip[aria-pressed="true"] {
+  color: var(--accent-ink);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.log-chips--yesno .chip { min-height: 52px; font-size: 1.0625rem; }
+
+.log-details { display: flex; flex-direction: column; gap: var(--sp-3); }
+.log-details[data-hidden="true"] { display: none; }
+
+.log-input {
+  min-height: 48px;
+  font-size: 1rem;
+}
+
+.log-total {
+  display: flex; align-items: center; gap: var(--sp-2);
+  margin: 0; color: var(--ink-soft);
+}
+
+.log-save { min-height: 54px; font-size: 1.0625rem; }
+
+@media (max-width: 700px) {
+  .next-class__eq { display: none; }
+  .student-head__actions { margin-left: 0; width: 100%; }
+
+  /*
+   * Logging a session has a hard budget: it must complete without scrolling
+   * on a small phone. On a 375x667 screen the shell alone costs about a fifth
+   * of the viewport, so on this one screen the nav and footer stand down —
+   * the form carries its own back arrow, and there is nothing else to do here.
+   */
+  body[data-screen="tutor-log"] .app-header,
+  body[data-screen="tutor-log"] .app-footer { display: none; }
+  body[data-screen="tutor-log"] .app-main { padding: var(--sp-3) var(--sp-3) var(--sp-4); }
+
+  .log-form { gap: var(--sp-2); }
+  .log-field { gap: 2px; }
+  .log-field__label { font-size: .6875rem; }
+  .log-head { margin-bottom: var(--sp-2); }
+  .log-head__title { font-size: 1.125rem; }
+  .chip { min-height: 44px; }
+  .log-chips--yesno .chip { min-height: 48px; }
+  .log-input { min-height: 44px; }
+  .log-save { min-height: 50px; }
+}
+
+/* The printable verification record lives in the page but is only visible to
+   the printer — see css/print.css. One source, so the paper cannot disagree
+   with the screen. */
+.cert { display: none; }

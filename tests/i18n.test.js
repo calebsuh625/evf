@@ -8,7 +8,7 @@
  */
 
 import { describe, it, equal, ok, deepEqual } from './runner.js';
-import { LANGS, LOCALES, t, setLang, getLang, toggleLang } from '../js/i18n.js';
+import { LANGS, LOCALES, t, setLang, getLang, toggleLang, allKeys, rawString } from '../js/i18n.js';
 
 /**
  * The dictionaries are module-private, so probe them through t(): a key is
@@ -57,6 +57,49 @@ const KEYS = [
   'selftest.footnote', 'selftest.nFailing'
 ];
 
+describe('dictionary parity', () => {
+  it('defines exactly the same keys in both languages', () => {
+    // Derived from the dictionaries themselves, so a key added to one and
+    // forgotten in the other fails here without anyone updating a list.
+    const en = allKeys('en');
+    const zh = allKeys('zh');
+    const missingFromZh = en.filter((k) => !zh.includes(k));
+    const missingFromEn = zh.filter((k) => !en.includes(k));
+    deepEqual(missingFromZh, [], `no Chinese for: ${missingFromZh.join(', ')}`);
+    deepEqual(missingFromEn, [], `no English for: ${missingFromEn.join(', ')}`);
+  });
+
+  it('has a substantial dictionary', () => {
+    ok(allKeys('en').length > 180, `expected a full dictionary, got ${allKeys('en').length}`);
+  });
+
+  it('has no empty string in either language', () => {
+    for (const lang of LANGS) {
+      const blank = allKeys(lang).filter((k) => String(rawString(lang, k)).trim() === '');
+      deepEqual(blank, [], `${lang} has blank values: ${blank.join(', ')}`);
+    }
+  });
+
+  it('translates every Chinese value rather than copying the English', () => {
+    const SAME_IN_BOTH = new Set(['lang.toggle', 'lang.name', 'app.title']);
+    const copied = allKeys('en')
+      .filter((k) => !SAME_IN_BOTH.has(k))
+      .filter((k) => rawString('en', k) === rawString('zh', k));
+    deepEqual(copied, [], `identical in both languages: ${copied.join(', ')}`);
+  });
+
+  it('keeps every placeholder in the Chinese translation', () => {
+    const broken = [];
+    for (const key of allKeys('en')) {
+      const en = String(rawString('en', key));
+      const zh = String(rawString('zh', key));
+      const names = (str) => [...str.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort();
+      if (JSON.stringify(names(en)) !== JSON.stringify(names(zh))) broken.push(key);
+    }
+    deepEqual(broken, [], `placeholders differ between languages: ${broken.join(', ')}`);
+  });
+});
+
 describe('i18n coverage', () => {
   it('has both languages registered', () => {
     deepEqual(LANGS, ['en', 'zh']);
@@ -92,10 +135,12 @@ describe('i18n coverage', () => {
   it('every Chinese string actually contains Chinese characters', () => {
     setLang('zh');
     const HAS_HAN = /[一-鿿]/;
-    // Latin-only values are legitimate for a few keys (the toggle reads
-    // "English" when the UI is in Chinese).
+    // A few values are legitimately Latin-only: the toggle reads "English"
+    // when the UI is in Chinese, and weekday keys are checked separately.
     const LATIN_OK = new Set(['lang.toggle', 'app.title']);
-    const suspicious = KEYS.filter((k) => !LATIN_OK.has(k) && !HAS_HAN.test(t(k)));
+    const suspicious = allKeys('zh')
+      .filter((k) => !LATIN_OK.has(k))
+      .filter((k) => !HAS_HAN.test(String(rawString('zh', k))));
     deepEqual(suspicious, [], `no Han characters in: ${suspicious.join(', ')}`);
   });
 });

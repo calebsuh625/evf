@@ -57,10 +57,11 @@ import {
 } from './csv.js';
 import { isValidTimeZone, parseHhMm } from './time.js';
 
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 const STORAGE_KEY = 'evf.program.v1';
 const LANG_KEY = 'evf.lang';
+const VIEW_AS_KEY = 'evf.viewAs';
 
 export const ROLES = Object.freeze(['tutor', 'student']);
 export const PAIRING_STATUSES = Object.freeze(['active', 'paused', 'ended']);
@@ -115,6 +116,9 @@ export function newTutor(fields = {}) {
     subjects: [],
     levelsComfortable: [],
     maxStudents: 2,
+    // Separate from `active`. A tutor mid-term with a full plate is still very
+    // much active; they just are not looking for another student this week.
+    acceptingStudents: true,
     bio: '',
     meetingLink: '',
     createdAt: new Date().toISOString(),
@@ -182,6 +186,35 @@ export function newSession(fields = {}) {
     loggedAt: new Date().toISOString(),
     ...fields
   };
+}
+
+/**
+ * A session that is on the calendar but has not been logged yet.
+ *
+ * `loggedAt: null` is the marker, and `occurred: null` follows from it: until
+ * a tutor says otherwise, whether it happened is genuinely unknown. Writing
+ * `false` there would read as "did not happen", and writing `true` would count
+ * hours nobody has confirmed.
+ */
+export function newScheduledSession(fields = {}) {
+  return {
+    id: fields.id ?? newId('ses'),
+    pairingId: '',
+    scheduledAt: new Date().toISOString(),
+    occurred: null,
+    durationMinutes: null,
+    prepMinutes: 0,
+    followupMinutes: 0,
+    covered: '',
+    homework: '',
+    loggedAt: null,
+    ...fields
+  };
+}
+
+/** True once a tutor has actually filled this in. */
+export function isLogged(session) {
+  return session?.loggedAt != null;
 }
 
 /* ------------------------------------------------------------------ *
@@ -304,6 +337,26 @@ const MIGRATIONS = {
       pairings,
       sessions,
       availability
+    };
+  }
+  ,
+
+  /**
+   * 2 -> 3: tutors gain `acceptingStudents`, which is separate from `active`
+   * — a tutor with a full plate is still active, just not looking for another
+   * student. Sessions may now carry `occurred: null`, meaning scheduled but
+   * not yet logged; every session that already exists has been logged, so
+   * this migration leaves them alone.
+   */
+  2(data) {
+    return {
+      ...data,
+      version: 3,
+      people: (data.people ?? []).map((person) =>
+        person.role === 'tutor' && person.acceptingStudents === undefined
+          ? { ...person, acceptingStudents: true }
+          : person
+      )
     };
   }
 };
@@ -557,7 +610,13 @@ export function validate(data) {
     if (s.loggedAt != null && !isIsoUtc(s.loggedAt)) {
       errors.push(`Session "${s.id}" loggedAt is not an ISO 8601 UTC string: "${s.loggedAt}".`);
     }
-    if (typeof s.occurred !== 'boolean') {
+    // A session on the calendar but not yet logged has occurred: null. Once
+    // loggedAt is set, a tutor has answered and it must be a real boolean.
+    if (s.loggedAt == null) {
+      if (s.occurred !== null && typeof s.occurred !== 'boolean') {
+        errors.push(`Session "${s.id}" is not logged, so "occurred" must be null or a boolean, not "${s.occurred}".`);
+      }
+    } else if (typeof s.occurred !== 'boolean') {
       errors.push(`Session "${s.id}" field "occurred" must be true or false, not "${s.occurred}".`);
     }
     for (const field of ['durationMinutes', 'prepMinutes', 'followupMinutes']) {
@@ -1235,6 +1294,170 @@ export function summary(data = state) {
     unpairedStudents: unpairedStudents(data).length,
     tutorsWithCapacity: tutorsWithCapacity(data).length
   };
+}
+
+/* ------------------------------------------------------------------ *
+ * Mutations
+ * ------------------------------------------------------------------ */
+
+/** Minutes a single session may contribute in total. */
+export const SESSION_MINUTE_CAP = 120;
+
+/**
+ * Record what happened in a session, creating the row if the session was
+ * never on the calendar.
+ *
+ * Total minutes are capped at two hours. The cap is applied here rather than
+ * only in the form, so it holds however the entry point changes — and it
+ * trims follow-up first, then prep, never the time actually spent with the
+ * student.
+ *
+ * @param {{id?:string, pairingId:string, scheduledAt:string, occurred:boolean,
+ *          durationMinutes?:number, prepMinutes?:number, followupMinutes?:number,
+ *          covered?:string, homework?:string}} entry
+ * @returns {object} the saved session
+ */
+export function logSession(entry) {
+  if (!entry?.pairingId) throw new TypeError('logSession requires a pairingId.');
+  if (typeof entry.occurred !== 'boolean') {
+    throw new TypeError('logSession requires occurred to be true or false.');
+  }
+
+  const capped = capSessionMinutes(entry);
+  const saved = {
+    ...newSession({
+      id: entry.id,
+      pairingId: entry.pairingId,
+      scheduledAt: entry.scheduledAt ?? new Date().toISOString()
+    }),
+    occurred: entry.occurred,
+    durationMinutes: entry.occurred ? capped.durationMinutes : 0,
+    prepMinutes: entry.occurred ? capped.prepMinutes : 0,
+    followupMinutes: entry.occurred ? capped.followupMinutes : 0,
+    covered: entry.covered ?? '',
+    homework: entry.homework ?? '',
+    loggedAt: new Date().toISOString()
+  };
+
+  update((current) => {
+    const index = current.sessions.findIndex((s) => s.id === saved.id);
+    const sessions = index === -1
+      ? [...current.sessions, saved]
+      : current.sessions.map((s) => (s.id === saved.id ? { ...s, ...saved } : s));
+    return { ...current, sessions };
+  });
+
+  return saved;
+}
+
+/**
+ * Clamp a session's minutes to the cap, trimming follow-up first and prep
+ * second. Pure, so the form can show the same numbers it will save.
+ */
+export function capSessionMinutes({ durationMinutes, prepMinutes, followupMinutes }, cap = SESSION_MINUTE_CAP) {
+  const clean = (n) => {
+    const value = Number(n);
+    return Number.isFinite(value) && value > 0 ? Math.round(value) : 0;
+  };
+
+  let duration = Math.min(clean(durationMinutes), cap);
+  let prep = clean(prepMinutes);
+  let followup = clean(followupMinutes);
+
+  let spare = cap - duration;
+  prep = Math.min(prep, Math.max(0, spare));
+  spare -= prep;
+  followup = Math.min(followup, Math.max(0, spare));
+
+  return {
+    durationMinutes: duration,
+    prepMinutes: prep,
+    followupMinutes: followup,
+    totalMinutes: duration + prep + followup,
+    capped: clean(durationMinutes) + clean(prepMinutes) + clean(followupMinutes) > cap
+  };
+}
+
+/** Put a session on the calendar without logging it. */
+export function scheduleSession(fields) {
+  const session = newScheduledSession(fields);
+  update((current) => ({ ...current, sessions: [...current.sessions, session] }));
+  return session;
+}
+
+export function deleteSession(sessionId) {
+  update((current) => ({
+    ...current,
+    sessions: current.sessions.filter((s) => s.id !== sessionId)
+  }));
+}
+
+/** Patch one person by id. */
+export function updatePerson(personId, patch) {
+  update((current) => ({
+    ...current,
+    people: current.people.map((p) => (p.id === personId ? { ...p, ...patch } : p))
+  }));
+  return personById(personId);
+}
+
+/** The "not taking new students right now" toggle. */
+export function setAcceptingStudents(tutorId, accepting) {
+  return updatePerson(tutorId, { acceptingStudents: Boolean(accepting) });
+}
+
+/**
+ * Replace one person's availability wholesale.
+ *
+ * Availability is a set, not a log: editing it means declaring the current
+ * state, so a partial merge would leave stale windows behind.
+ */
+export function setAvailabilityFor(personId, rows) {
+  const clean = (rows ?? []).map((row) => ({
+    personId,
+    weekday: Number(row.weekday),
+    startTime: row.startTime,
+    endTime: row.endTime,
+    timezone: row.timezone
+  }));
+
+  update((current) => ({
+    ...current,
+    availability: [...current.availability.filter((a) => a.personId !== personId), ...clean]
+  }));
+  return clean;
+}
+
+/* ------------------------------------------------------------------ *
+ * Who am I looking at this as
+ * ------------------------------------------------------------------ */
+
+/**
+ * There is no auth yet, so the app asks. `viewAs` is either 'admin' or a
+ * person id, persisted separately from program data — it is a preference
+ * about this browser, not a fact about the program, and it must never travel
+ * inside an export.
+ */
+export function loadViewAs() {
+  try {
+    return localStorage.getItem(VIEW_AS_KEY) || 'admin';
+  } catch {
+    return 'admin';
+  }
+}
+
+export function saveViewAs(value) {
+  try {
+    localStorage.setItem(VIEW_AS_KEY, value);
+  } catch { /* a preference is not worth an error */ }
+  return value;
+}
+
+/** The tutor currently being viewed as, or null when that is the coordinator. */
+export function currentTutor(data = state, viewAs = loadViewAs()) {
+  if (!viewAs || viewAs === 'admin') return null;
+  const person = data.people.find((p) => p.id === viewAs);
+  return person?.role === 'tutor' ? person : null;
 }
 
 /* ------------------------------------------------------------------ *

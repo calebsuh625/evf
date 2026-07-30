@@ -9,6 +9,8 @@
 <link rel="stylesheet" href="css/layout.css">
 <link rel="stylesheet" href="css/components.css">
 <link rel="stylesheet" href="css/views.css">
+<link rel="stylesheet" href="css/tutor.css">
+<link rel="stylesheet" href="css/print.css" media="print">
 </head>
 <body>
 
@@ -26,6 +28,8 @@
     </nav>
 
     <div class="app-header__tools">
+      <!-- No auth yet: the app asks who is looking, and remembers. -->
+      <div class="role-picker" id="role-picker"></div>
       <button type="button" class="lang-toggle" id="lang-toggle" aria-live="polite">
         <span data-i18n="lang.toggle">中文</span>
       </button>
