@@ -185,3 +185,203 @@
   .selftest-example__eq { display: none; }
   .selftest-row__detail { padding-left: var(--sp-3); }
 }
+
+/* ------------------------------------------------------------------ *
+ * Class chat
+ *
+ * One thread per class. Sized for a phone first: the log scrolls inside
+ * itself so the composer stays put, and a bubble may run the full width
+ * rather than the narrow column a desktop chat uses — a student reading a
+ * homework note should not read it three words to a line.
+ * ------------------------------------------------------------------ */
+
+.msg-head { margin-bottom: var(--sp-4); }
+
+.msg-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sp-2); }
+
+.msg-row__btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  width: 100%;
+  padding: var(--sp-3);
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  cursor: pointer;
+}
+
+.msg-row__btn:hover { background: var(--paper-2); }
+
+.msg-row__main { display: grid; gap: 2px; min-width: 0; }
+.msg-row__name { font-weight: 600; }
+
+.msg-row__preview {
+  color: var(--ink-faint);
+  font-size: .875rem;
+  /* One line, ellipsised: a preview that wraps stops being a list. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.msg-row__meta {
+  display: grid;
+  gap: 4px;
+  justify-items: end;
+  flex: none;
+  text-align: right;
+}
+
+.msg-badge {
+  padding: 1px 8px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-radius: 999px;
+  font-size: .8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.nav__badge {
+  display: inline-block;
+  margin-inline-start: 6px;
+  min-width: 18px;
+  padding: 0 5px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-radius: 999px;
+  font-size: .75rem;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+
+/* ── One thread ─────────────────────────────────────────────────── */
+
+.thread__head { margin-bottom: var(--sp-3); }
+.thread__nav { margin-bottom: var(--sp-2); }
+
+.thread__members {
+  padding: var(--sp-3);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  margin-bottom: var(--sp-3);
+}
+
+.thread__members h2 { margin: 0; }
+
+.member-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin: var(--sp-2) 0;
+}
+
+.member {
+  display: inline-grid;
+  padding: 4px 10px;
+  background: var(--paper-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  font-size: .875rem;
+}
+
+.member__name { font-weight: 600; }
+.member__role { color: var(--ink-faint); font-size: .75rem; }
+
+/* The coordinator's chip is outlined, because the panel's claim — an adult is
+   always here — is the one a parent is reading the panel to check. */
+.member--admin { border-color: var(--accent); background: var(--accent-soft); }
+.member--maybe { color: var(--ink-faint); border-style: dashed; align-content: center; }
+
+.thread__local { margin: 0 0 var(--sp-2); }
+
+.thread__log {
+  display: grid;
+  gap: var(--sp-3);
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: var(--sp-2) 0;
+  border-block: 1px solid var(--line);
+}
+
+.thread__day { display: grid; gap: var(--sp-2); }
+
+.thread__date {
+  margin: 0;
+  text-align: center;
+  font-size: .8125rem;
+  color: var(--ink-faint);
+}
+
+.bubble {
+  max-width: 90%;
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
+
+/* Own messages sit right, as every chat does. Colour is not the only cue —
+   the name reads "You" — so it survives a colour-blind reader. */
+.bubble--mine { margin-inline-start: auto; background: var(--accent-soft); border-color: var(--accent); }
+.bubble--gone { max-width: 100%; background: none; border-style: dashed; text-align: center; }
+
+.bubble__who {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--sp-2);
+  margin: 0 0 2px;
+}
+
+.bubble__name { font-weight: 600; font-size: .875rem; }
+.bubble__role, .bubble__time { color: var(--ink-faint); font-size: .75rem; }
+
+.bubble__body {
+  margin: 0;
+  /* Volunteers type newlines and expect them to survive. */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.bubble .btn { margin-top: var(--sp-1); }
+
+.empty--thread { padding-block: var(--sp-6); }
+
+/* ── The composer ───────────────────────────────────────────────── */
+
+.composer { display: grid; gap: var(--sp-2); padding-top: var(--sp-3); }
+
+.composer__box {
+  width: 100%;
+  min-height: 44px;
+  padding: var(--sp-2);
+  font: inherit;
+  color: inherit;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  resize: vertical;
+}
+
+.composer__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+
+.composer__foot p { margin: 0; flex: 1; }
+
+@media (max-width: 30rem) {
+  .composer__foot { flex-direction: column; align-items: stretch; }
+  .composer__foot .btn { width: 100%; }
+  .bubble { max-width: 100%; }
+}

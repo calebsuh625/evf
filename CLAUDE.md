@@ -4,9 +4,18 @@ Guidance for Claude Code when working in this repository.
 
 ## What this is
 
-A volunteer tutoring coordinator. US-based high school tutors teach students in
-mainland China, one-on-one, on weekends. Static site, no backend, no accounts.
-Runs entirely in the browser; the data lives in a JSON file the admin owns.
+A volunteer **English** tutoring coordinator. US-based high school tutors teach
+English to students in mainland China, one-on-one, on weekends.
+
+**The program teaches English and only English.** A tutor's `subjects` and a
+student's `goals` both draw on `ENGLISH_SKILLS` in `store.js` — conversation,
+reading, writing, grammar, pronunciation, vocabulary, listening, exam prep,
+presentation skills. Free text is still accepted, because a student who asks
+for something not on the list has told you something useful; the matcher simply
+finds no keyword match and says so. Do not reintroduce academic subjects.
+
+Static site, no backend, no accounts. Runs entirely in the browser; the data
+lives in a JSON file the admin owns.
 
 There is no server holding minors' names, schools, or guardian contacts. That is
 a feature of the design, not a limitation of it.
@@ -56,6 +65,7 @@ js/
   store.js          data model + data layer: load, save, import, export, migrate
   time.js           timezone math       — pure, no DOM
   matching.js       pairing scorer      — pure, no DOM
+  chat.js           class threads       — pure, no DOM
   hours.js          hour computation    — pure, no DOM
   csv.js            CSV parse/serialise — pure, no DOM
   tutor.js          tutor-facing selectors — pure, no DOM
@@ -68,24 +78,28 @@ js/
 css/print.css       the volunteer-hour verification record (media="print")
 data/sample.json    committed demo dataset — synthetic only
 tests/test.html     browser test runner
-tests/*.test.js     unit tests: time, matching, hours, csv, store, i18n
+tests/*.test.js     unit tests: time, matching, hours, csv, store, chat,
+                    tutor, admin, i18n, assets, a11y
 ```
 
 ## The data model
 
-One versioned JSON document. Current version is **2**.
+One versioned JSON document. Current version is **6**.
 
 ```
 {
-  version: 2,
-  program:      { name, adminTimeZone, studentTimeZone, defaultSessionMinutes, terms },
+  version: 6,
+  program:      { name, adminTimeZone, studentTimeZone, defaultSessionMinutes,
+                  sampleData, terms },
   people:       [{ id, role: 'tutor'|'student', name, preferredName, email,
                    wechat, timezone, locale, active, createdAt, ...roleFields }],
   pairings:     [{ id, tutorId, studentId, status: 'active'|'paused'|'ended',
                    startedAt, endedAt, notes }],
   sessions:     [{ id, pairingId, scheduledAt, occurred, durationMinutes,
                    prepMinutes, followupMinutes, covered, homework, loggedAt }],
-  availability: [{ personId, weekday, startTime, endTime, timezone }]
+  availability: [{ personId, weekday, startTime, endTime, timezone }],
+  messages:     [{ id, pairingId, authorId, authorRole: 'tutor'|'student'|
+                   'guardian'|'admin', body, sentAt, deletedAt, deletedBy }]
 }
 ```
 
@@ -277,6 +291,11 @@ first, then prep, and never the time actually spent with the student.
 body of the page, not an appendix, because when a tutor leaves the only
 honest answer to "where do I pick this up" is what was actually covered and
 what homework was set.
+
+**The admin time zone is fixed to California** (`PROGRAM_TIME_ZONE`), not
+guessed from the browser. A coordinator travelling, or opening the app on a
+school machine set to UTC, must not silently reinterpret every date in the
+program. It is also the default for a newly added tutor, who can change it.
 
 **Availability is a recruiting tool, not a rota.** It only matters when a
 tutor wants another student, and `acceptingStudents` is separate from
@@ -541,6 +560,49 @@ Two rules that exist because of WebKit and must not be relaxed:
 - **Midnight can come back as hour 24** under `hourCycle: 'h23'`.
   `wallPartsInZone` takes `hour % 24` for exactly this reason.
 
+## Class chat
+
+`js/chat.js`, `#/messages` and `#/messages/:pairingId`. One thread per
+pairing — a tutor with two students has two conversations, not one group.
+
+Threads are **derived from pairings, never stored**, so a class cannot exist
+without a thread and a thread cannot exist without a class.
+
+**Two rules that are not preferences, because the users are minors:**
+
+- **The coordinator is in every thread.** Structurally, not as a moderator who
+  can be removed and not behind a setting. `participantsOf` returns
+  `adminPresent: true` unconditionally and there is a test walking every
+  pairing and every viewer to prove no combination produces a thread without
+  them.
+- **There are no private messages.** No tutor-to-student channel, no direct
+  line that bypasses the thread. Adding one removes the only safeguard this
+  design has.
+
+**No read receipts, typing indicators, "last seen", or per-person message
+counts.** A chat that reports who has read what turns a conversation into a
+compliance surface, which principle 3 rules out. `tests/chat.test.js` asserts
+the absence of those fields by name.
+
+**Unread is the one number in the app that is a service rather than a score.**
+It is about what somebody said to you, it is computed from a marker in the
+reader's own browser (`evf.read:<viewAs>`), and it **never enters the program
+document or an export** — see `readState`. Contrast the tutor nudge, which is
+deliberately a list with no number at all.
+
+**Withdrawing keeps a tombstone.** `deleteMessage` clears the body and sets
+`deletedAt`; the row stays. A message that vanishes without trace, in a thread
+involving a child, is worse than one visibly withdrawn — a parent who saw
+something and came back to find nothing has no recourse.
+
+**A guardian is not a record here either.** They post against the student's id
+with `authorRole: 'guardian'`, which is what distinguishes them, and they read
+the same thread their child reads rather than a filtered one.
+
+**The screens must not imply delivery.** There is no server, so a message is
+saved in the browser that wrote it and reaches nobody. Both screens say so.
+Remove that notice only when a sync layer actually exists.
+
 ## The self-test panel
 
 `#/selftest` runs the timezone assertions in the reader's browser and shows
@@ -583,7 +645,9 @@ Routing is hash-based (`#/matches`) because GitHub Pages has no rewrite rules �
 Old exports must keep opening. A coordinator's backup from last spring is the
 program's memory.
 
-Existing migrations: `0 → 1` (the pre-versioned prototype: loose top-level
+Existing migrations: `5 → 6` (adds `messages`), `4 → 5` (`program.sampleData`),
+`3 → 4` (tutor `interests`), `2 → 3` (`acceptingStudents`, `occurred: null`),
+`0 → 1` (the pre-versioned prototype: loose top-level
 settings, `endsAt` instead of `durationMinutes`) and `1 → 2` (split
 `tutors`/`students` into `people`; `matches` → `pairings`; availability lifted
 out of the person; sessions moved to `pairingId` and `occurred`). Version is

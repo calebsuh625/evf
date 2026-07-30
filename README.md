@@ -1,7 +1,7 @@
-# Weekend Tutoring
+# Weekend English
 
-A coordinator for a volunteer tutoring program: US high school students tutor
-students in mainland China, one-on-one, on weekends.
+A coordinator for a volunteer English tutoring program: US high school students
+teach English to students in mainland China, one-on-one, on weekends.
 
 **[Live demo → calebsuh625.github.io/evf](https://calebsuh625.github.io/evf/)**
 
@@ -28,6 +28,14 @@ time with the meeting link, the current homework, and everything covered so far.
 Chinese by default, with an English toggle. **There is nothing a student has to
 fill in.** Guardian contact details are the one editable thing, only from the
 guardian view, and every field is optional.
+
+**For everyone** — a **class chat**, one conversation per class, holding the
+tutor, the student, their parent if the family is using the app, and the
+coordinator. The coordinator is in every thread structurally and there are no
+private messages: this is a program for children, so an adult can always see
+every conversation. There are no read receipts and nothing counts who replied.
+*Note that until a sync layer exists, messages are saved in the browser that
+wrote them and are not delivered — every screen says so plainly.*
 
 **For coordinators** — an overview with hours by week, month and term plus a
 growth chart; a **needs-attention** screen surfacing pairings that have quietly
@@ -115,16 +123,16 @@ under the `/evf/` project subpath.
 
 [![tests](https://github.com/calebsuh625/evf/actions/workflows/tests.yml/badge.svg)](https://github.com/calebsuh625/evf/actions/workflows/tests.yml)
 
-**478 tests.** Every push and pull request runs them and fails on a regression.
+**489 tests.** Every push and pull request runs them and fails on a regression.
 
 In a browser: open <http://localhost:8000/tests/test.html>.
 
 Headless:
 
 ```sh
-node tests/run-node.mjs                              # 446 tests, nothing to install
+node tests/run-node.mjs                              # 478 tests, nothing to install
 npm install && npx playwright install chromium
-node tests/run-browser.mjs http://localhost:8000     # all 478
+node tests/run-browser.mjs http://localhost:8000     # all 510
 ```
 
 The Node run needs nothing installed, because the logic modules are deliberately
@@ -203,15 +211,15 @@ deliberately — forward past the gap, and to the first of the two repeats.
 
 Schedule overlap is a hard requirement: fifteen hours apart, a pair with no
 shared window has no session to have, so it is never suggested however well they
-fit otherwise. Beyond that the scorer weighs subject fit, English level, shared
+fit otherwise. Beyond that the scorer weighs skill fit, English level, shared
 interests, and how loaded each tutor already is, so students spread across
 volunteers instead of piling onto whoever fits best.
 
 **Every suggestion explains itself**, in either language:
 
 > 3 shared hours, Saturday morning Beijing time (08:00–11:00) · Both listed
-> english conversation · Tutor is comfortable at intermediate level · Both
-> interested in k-pop · Tutor has 1 of 2 places open
+> conversation · Tutor is comfortable at intermediate level · Both interested
+> in k-pop · Tutor has 1 of 2 places open
 >
 > *Worth knowing:* Only one shared window — fragile if either has to cancel ·
 > This is the tutor's last place
@@ -240,6 +248,7 @@ js/
   store.js          data model, load/save, import/export, migrations
   time.js           timezone math       — pure functions, no DOM
   matching.js       pairing scorer      — pure functions, no DOM
+  chat.js           class threads       — pure functions, no DOM
   hours.js          hour computation    — pure functions, no DOM
   tutor.js          tutor-facing views  — pure functions, no DOM
   admin.js          coordinator figures — pure functions, no DOM

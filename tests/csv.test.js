@@ -145,18 +145,18 @@ describe('toCsv', () => {
 
 describe('cell codecs', () => {
   it('parses and formats lists', () => {
-    deepEqual(parseList('algebra; geometry'), ['algebra', 'geometry']);
-    deepEqual(parseList('algebra;geometry'), ['algebra', 'geometry']);
+    deepEqual(parseList('reading; writing'), ['reading', 'writing']);
+    deepEqual(parseList('reading;writing'), ['reading', 'writing']);
     deepEqual(parseList(''), []);
     deepEqual(parseList(null), []);
     deepEqual(parseList('  a ;; b  '), ['a', 'b']);
-    equal(formatList(['algebra', 'geometry']), 'algebra; geometry');
+    equal(formatList(['reading', 'writing']), 'reading; writing');
     equal(formatList([]), '');
     equal(formatList(undefined), '');
   });
 
   it('round-trips a list', () => {
-    const list = ['english reading', 'sat vocabulary'];
+    const list = ['reading', 'exam prep'];
     deepEqual(parseList(formatList(list)), list);
   });
 

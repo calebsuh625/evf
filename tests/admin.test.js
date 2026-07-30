@@ -38,7 +38,7 @@ function fixture(overrides = {}) {
   return {
     version: 4,
     program: {
-      name: 'Weekend Tutoring',
+      name: 'Weekend English',
       adminTimeZone: NY,
       studentTimeZone: SH,
       terms: [
@@ -87,8 +87,8 @@ function person(id, role, extra = {}) {
     email: '', wechat: '', timezone: role === 'tutor' ? NY : SH,
     locale: role === 'tutor' ? 'en' : 'zh', active: true,
     ...(role === 'tutor'
-      ? { subjects: ['algebra'], levelsComfortable: ['beginner'], interests: [], maxStudents: 2, acceptingStudents: true, school: '' }
-      : { goals: ['algebra'], interests: [], englishLevel: 'beginner' }),
+      ? { subjects: ['reading'], levelsComfortable: ['beginner'], interests: [], maxStudents: 2, acceptingStudents: true, school: '' }
+      : { goals: ['reading'], interests: [], englishLevel: 'beginner' }),
     ...extra
   };
 }

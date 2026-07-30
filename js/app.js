@@ -12,6 +12,7 @@ import {
   hasExplicitLang, storedLang, defaultLangFor
 } from './i18n.js';
 import { el, clear, toast, button } from './dom.js';
+import { totalUnread } from './chat.js';
 
 /*
  * Views load on demand.
@@ -53,6 +54,13 @@ const ROUTES = [
 
   // Student and guardian
   { path: '/student', key: 'st.nav.home', nav: ['student', 'guardian'], role: 'student', load: () => import('./views/student-home.js') },
+
+  // Class chat. One screen serving all four roles — the row a tutor sees and
+  // the row a parent sees are the same row, differing only in the query
+  // `chat.threadsFor` runs. No `role` guard: everybody belongs to some thread,
+  // and the coordinator belongs to all of them.
+  { path: '/messages', key: 'chat.nav', nav: ['admin', 'tutor', 'student', 'guardian'], load: () => import('./views/messages.js') },
+  { path: '/messages/:pairingId', key: 'chat.threadTitle', nav: [], load: () => import('./views/message-thread.js'), screen: 'thread' },
 
   // Reachable from the footer rather than the main nav: it is a proof, not
   // a screen anyone works in day to day.
@@ -137,7 +145,35 @@ function renderNav() {
       text: t(route.key)
     });
     if (route.path === currentPath) link.setAttribute('aria-current', 'page');
+
+    // A count of unread messages is the one number in this app that is a
+    // service rather than a score: it is about what somebody said to you, it
+    // is computed from this browser's own read markers, and it never travels
+    // to anyone else. Contrast the tutor nudge, which is deliberately a list
+    // with no number at all.
+    if (route.path === '/messages') {
+      const unread = unreadForNav();
+      if (unread) {
+        link.append(el('span', {
+          class: 'nav__badge',
+          text: String(unread),
+          'aria-label': t('chat.unread', { count: unread })
+        }));
+      }
+    }
+
     nav.append(link);
+  }
+}
+
+/** Unread across every thread the selected person belongs to. */
+function unreadForNav() {
+  try {
+    const data = store.getState();
+    const view = store.currentView(data);
+    return totalUnread(view, data, store.readState());
+  } catch {
+    return 0;
   }
 }
 
@@ -294,6 +330,7 @@ async function renderRoute({ scrollToTop = true } = {}) {
       student: view.role === 'student' || view.role === 'guardian' ? view.person : null,
       isGuardian: view.role === 'guardian',
       role: view.role,
+      view,
       nowIso: new Date().toISOString()
     });
   } catch (err) {

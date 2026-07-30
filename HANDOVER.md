@@ -1,6 +1,6 @@
 # Handover
 
-For whoever is running the tutoring program next.
+For whoever is running the English tutoring program next.
 
 You do not need to be able to code to run this. You need to know four things:
 where the data file lives, how to add and remove people, how to export, and
@@ -31,7 +31,7 @@ Somewhere that is not one person's laptop:
 - the club's shared Google Drive or OneDrive folder, **and**
 - your own copy, so it survives losing access to the shared folder.
 
-Name them by date — `weekend-tutoring-2026-07-30.json` — and keep the old ones.
+Name them by date — `weekend-english-2026-07-30.json` — and keep the old ones.
 They are small (about 100 KB) and an old backup has saved more than one program.
 
 > **Write down here where yours actually lives, and keep this line updated:**
@@ -143,7 +143,7 @@ For **tutors**, so matching works:
 
 | Field | Why |
 |---|---|
-| Subjects | Matched against what students asked for |
+| Skills | Which parts of English they can teach — matched against what students asked for |
 | Levels taken | Which English levels they are comfortable with |
 | Maximum students | Their own limit. The app never exceeds it |
 | Availability | They set this themselves under *My availability* |
@@ -153,7 +153,7 @@ For **students**:
 
 | Field | Why |
 |---|---|
-| Goals | What they want help with |
+| Goals | Which parts of English they want help with |
 | English level | So they are not paired with a tutor who cannot pitch it |
 | Availability | Set by you or them, in Beijing time |
 | Interests | Only affects the ranking slightly, but makes first sessions easier |
@@ -161,6 +161,22 @@ For **students**:
 Guardian contact fields are **optional and stay optional**. A family that gives
 you nothing has given you a complete answer. They can fill them in themselves
 by selecting *Guardian of …* in the picker at the top right.
+
+## Class chat
+
+Every class has one group chat: the tutor, the student, their parent if the
+family is using the app, and **you**. You are in every one of them and cannot be
+removed — this is a program for children, so an adult can always see every
+conversation. There are no private messages between a tutor and a student.
+
+It is under **Messages**. Nobody is scored on replying and nothing tracks who
+has read what.
+
+**One thing to know before you tell families about it:** the app has no server,
+so a message is saved in the browser it was typed in and does not reach anyone
+else. Every screen says so. Until that changes, treat it as notes rather than a
+way to contact somebody, and keep using WeChat or email for anything that
+actually has to arrive.
 
 ## Removing people
 

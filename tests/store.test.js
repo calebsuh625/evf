@@ -159,6 +159,17 @@ describe('record constructors', () => {
  * Migrations
  * ---------------------------------------------------------------- */
 
+/**
+ * The migration steps a file of version `from` must walk to reach current.
+ * Derived, so bumping SCHEMA_VERSION does not break assertions that are
+ * about something else.
+ */
+function stepsFrom(from) {
+  const steps = [];
+  for (let v = from; v < SCHEMA_VERSION; v += 1) steps.push(v);
+  return steps;
+}
+
 describe('migrate', () => {
   it('passes a current-version file through unchanged', () => {
     const { data, applied } = migrate(fixture());
@@ -317,7 +328,9 @@ describe('migrate', () => {
       version: 4, program: { name: 'Real Program' },
       people: [], pairings: [], sessions: [], availability: []
     });
-    deepEqual(applied, [4]);
+    // Derived from SCHEMA_VERSION, so a version bump does not break an
+    // assertion that is really about sampleData.
+    deepEqual(applied, stepsFrom(4));
     equal(data.program.sampleData, false);
   });
 
@@ -339,7 +352,7 @@ describe('migrate', () => {
       ],
       pairings: [], sessions: [], availability: []
     });
-    deepEqual(applied, [3, 4]);
+    deepEqual(applied, stepsFrom(3));
     deepEqual(data.people[0].interests, [], 'empty is a fine answer');
     deepEqual(data.people[1].interests, ['chess'], 'an existing list is left alone');
     deepEqual(data.people[2].interests, ['chess'], 'students already had the field');
@@ -604,7 +617,13 @@ describe('JSON export/import round trip', () => {
 
 describe('CSV export/import', () => {
   it('covers every table', () => {
-    deepEqual(CSV_TYPES, ['tutors', 'students', 'availability', 'pairings', 'sessions']);
+    // Every collection in the document round-trips as a spreadsheet, or a
+    // coordinator restoring from CSVs would silently lose one. Messages are
+    // included for that reason, not because anyone will read them in Excel.
+    deepEqual(
+      [...CSV_TYPES].sort(),
+      ['availability', 'messages', 'pairings', 'sessions', 'students', 'tutors']
+    );
   });
 
   it('rejects an unknown table name', () => {

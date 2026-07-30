@@ -67,7 +67,8 @@ function reportsPanel(store, data) {
     ['students', t('admin.exp.students')],
     ['availability', t('admin.exp.availability')],
     ['pairings', t('admin.exp.pairings')],
-    ['sessions', t('admin.exp.sessions')]
+    ['sessions', t('admin.exp.sessions')],
+    ['messages', t('admin.exp.messages')]
   ];
 
   return el('section', { class: 'card export-panel' },

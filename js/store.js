@@ -47,6 +47,7 @@
  * the program's memory.
  */
 
+import { canPost, composeMessage } from './chat.js';
 import {
   parseCsvToObjects,
   objectsToCsv,
@@ -57,17 +58,47 @@ import {
 } from './csv.js';
 import { isValidTimeZone, parseHhMm } from './time.js';
 
-export const SCHEMA_VERSION = 5;
+export const SCHEMA_VERSION = 6;
 
 const STORAGE_KEY = 'evf.program.v1';
 const LANG_KEY = 'evf.lang';
 const VIEW_AS_KEY = 'evf.viewAs';
 
 export const ROLES = Object.freeze(['tutor', 'student']);
+
+/**
+ * The club is in California, so that is the coordinator's clock and the
+ * default for a newly added tutor. A constant rather than a guess from the
+ * browser: a coordinator travelling, or opening the app on a school machine
+ * set to UTC, must not silently reinterpret every date in the program.
+ */
+export const PROGRAM_TIME_ZONE = 'America/Los_Angeles';
+
+/** Mainland China has one time zone and no daylight saving. */
+export const STUDENT_TIME_ZONE = 'Asia/Shanghai';
 export const PAIRING_STATUSES = Object.freeze(['active', 'paused', 'ended']);
 
 /** English levels, coarsest first. Tutors say which they are comfortable with. */
 export const ENGLISH_LEVELS = Object.freeze(['beginner', 'elementary', 'intermediate', 'advanced']);
+
+/**
+ * Who can be in a class thread.
+ *
+ * `admin` has no person record — the coordinator is whoever is holding the
+ * role, not a row in the roster.
+ */
+export const MESSAGE_ROLES = Object.freeze(['tutor', 'student', 'guardian', 'admin']);
+
+/**
+ * The program teaches English and only English, so a tutor's skills and a
+ * student's goals are drawn from the same short list. Free text is still
+ * accepted — a student who writes something not on this list has said
+ * something useful, and the matcher simply will not find a keyword match.
+ */
+export const ENGLISH_SKILLS = Object.freeze([
+  'conversation', 'reading', 'writing', 'grammar',
+  'pronunciation', 'vocabulary', 'listening', 'exam prep', 'presentation skills'
+]);
 
 /* ------------------------------------------------------------------ *
  * Shape
@@ -78,9 +109,9 @@ export function emptyProgram() {
     version: SCHEMA_VERSION,
     exportedAt: null,
     program: {
-      name: 'Weekend Tutoring',
-      adminTimeZone: guessTimeZone(),
-      studentTimeZone: 'Asia/Shanghai',
+      name: 'Weekend English',
+      adminTimeZone: PROGRAM_TIME_ZONE,
+      studentTimeZone: STUDENT_TIME_ZONE,
       defaultSessionMinutes: 60,
       // True only for the committed demo dataset. Deliberately part of the
       // document rather than a browser flag, so an export of the demo still
@@ -91,7 +122,8 @@ export function emptyProgram() {
     people: [],
     pairings: [],
     sessions: [],
-    availability: []
+    availability: [],
+    messages: []
   };
 }
 
@@ -112,7 +144,7 @@ export function newTutor(fields = {}) {
     preferredName: '',
     email: '',
     wechat: '',
-    timezone: guessTimeZone(),
+    timezone: PROGRAM_TIME_ZONE,
     locale: 'en',
     active: true,
     school: '',
@@ -150,7 +182,7 @@ export function newStudent(fields = {}) {
     preferredName: '',
     email: '',
     wechat: '',
-    timezone: 'Asia/Shanghai',
+    timezone: STUDENT_TIME_ZONE,
     locale: 'zh',
     active: true,
     grade: null,
@@ -233,6 +265,14 @@ export function isLogged(session) {
  * newer. Never edit a shipped migration — add the next one.
  */
 const MIGRATIONS = {
+  /**
+   * 5 -> 6: adds `messages`, one thread per pairing. Nothing existing has any,
+   * so this is an empty table plus the collection so views never guard for it.
+   */
+  5(data) {
+    return { ...data, version: 6, messages: Array.isArray(data.messages) ? data.messages : [] };
+  },
+
   /**
    * 4 -> 5: the program gains `sampleData`, so the app can say out loud when
    * what is on screen is the demo. Anything that already exists is somebody's
@@ -507,7 +547,8 @@ function normalise(data) {
     people: asArray(data.people),
     pairings: asArray(data.pairings),
     sessions: asArray(data.sessions),
-    availability: asArray(data.availability)
+    availability: asArray(data.availability),
+    messages: asArray(data.messages)
   };
 }
 
@@ -547,7 +588,7 @@ export function validate(data) {
     return { errors: ['Not a program file: expected a JSON object.'], warnings };
   }
 
-  for (const key of ['people', 'pairings', 'sessions', 'availability']) {
+  for (const key of ['people', 'pairings', 'sessions', 'availability', 'messages']) {
     if (!Array.isArray(data[key])) errors.push(`"${key}" must be an array.`);
   }
   if (errors.length) return { errors, warnings };
@@ -686,6 +727,34 @@ export function validate(data) {
     }
     if (!isValidTimeZone(a.timezone)) {
       errors.push(`${at} has an unknown time zone "${a.timezone}".`);
+    }
+  });
+
+  /* Messages */
+  const messageIds = new Set();
+  (data.messages ?? []).forEach((m, i) => {
+    const at = `messages[${i}]`;
+    if (!m || typeof m !== 'object') { errors.push(`${at} is not an object.`); return; }
+    if (!m.id || typeof m.id !== 'string') { errors.push(`${at} has no id.`); return; }
+    if (messageIds.has(m.id)) { errors.push(`Duplicate message id "${m.id}".`); return; }
+    messageIds.add(m.id);
+
+    if (!pairingIds.has(m.pairingId)) {
+      errors.push(`Message "${m.id}" belongs to pairing "${m.pairingId}", which is not in this file.`);
+    }
+    if (!MESSAGE_ROLES.includes(m.authorRole)) {
+      errors.push(`Message "${m.id}" has author role "${m.authorRole}"; expected one of ${MESSAGE_ROLES.join(', ')}.`);
+    }
+    // The coordinator is not a person record, so only the others resolve.
+    if (m.authorRole !== 'admin' && !personIds.has(m.authorId)) {
+      errors.push(`Message "${m.id}" was written by "${m.authorId}", who is not in this file.`);
+    }
+    if (!isIsoUtc(m.sentAt)) {
+      errors.push(`Message "${m.id}" sentAt is not an ISO 8601 UTC string: "${m.sentAt}".`);
+    }
+    if (typeof m.body !== 'string') errors.push(`Message "${m.id}" has no body.`);
+    if (m.deletedAt != null && !isIsoUtc(m.deletedAt)) {
+      errors.push(`Message "${m.id}" deletedAt is not an ISO 8601 UTC string.`);
     }
   });
 
@@ -995,6 +1064,20 @@ export function isSampleData(data = state) {
  * re-imports.
  */
 const CSV_TABLES = {
+  messages: {
+    label: 'Messages',
+    columns: [
+      ['id', (m) => m.id, (c) => c || undefined],
+      ['pairingId', (m) => m.pairingId, (c) => c],
+      ['authorId', (m) => m.authorId, (c) => c],
+      ['authorRole', (m) => m.authorRole, (c) => c],
+      ['sentAt', (m) => m.sentAt, (c) => c],
+      ['body', (m) => m.body, (c) => c],
+      ['deletedAt', (m) => m.deletedAt ?? '', (c) => c || null]
+    ],
+    rows: (data) => data.messages,
+    key: 'messages'
+  },
   tutors: {
     label: 'Tutors',
     columns: [
@@ -1559,6 +1642,108 @@ export function updatePerson(personId, patch) {
     people: current.people.map((p) => (p.id === personId ? { ...p, ...patch } : p))
   }));
   return personById(personId);
+}
+
+/**
+ * Post a message to a class thread.
+ *
+ * The store stamps the id and the time; `chat.composeMessage` decides the
+ * shape. Returns the stored message so a view can render it optimistically.
+ */
+export function postMessage({ pairingId, view, body }) {
+  const pairing = state.pairings.find((p) => p.id === pairingId);
+  if (!pairing) {
+    const err = new Error(`No such class: ${pairingId}`);
+    err.code = 'no-pairing';
+    throw err;
+  }
+  if (!canPost(pairing, view)) {
+    // Not a permission check — there is no auth here. It catches a screen
+    // trying to write a message that would make no sense.
+    const err = new Error('This person is not in that class.');
+    err.code = 'not-a-member';
+    throw err;
+  }
+
+  const message = composeMessage({
+    pairingId,
+    view,
+    body,
+    id: newId('msg'),
+    sentAt: new Date().toISOString()
+  });
+
+  update((current) => ({ ...current, messages: [...current.messages, message] }));
+  return message;
+}
+
+/**
+ * Withdraw a message.
+ *
+ * A tombstone, never a removal: the row stays with `deletedAt` set and the
+ * body cleared. In a thread involving a child, a message that disappears
+ * without trace is worse than one visibly withdrawn — a parent who saw
+ * something and came back to find nothing has been left with no recourse.
+ *
+ * The author may withdraw their own; the coordinator may withdraw any.
+ */
+export function deleteMessage(messageId, view) {
+  const message = state.messages.find((m) => m.id === messageId);
+  if (!message) {
+    const err = new Error(`No such message: ${messageId}`);
+    err.code = 'no-message';
+    throw err;
+  }
+
+  const isAuthor = view.role === message.authorRole
+    && (view.role === 'admin' || view.person?.id === message.authorId);
+  if (!isAuthor && view.role !== 'admin') {
+    const err = new Error('Only the person who wrote a message, or the coordinator, can withdraw it.');
+    err.code = 'not-author';
+    throw err;
+  }
+
+  update((current) => ({
+    ...current,
+    messages: current.messages.map((m) => (m.id === messageId
+      ? {
+        ...m,
+        body: '',
+        deletedAt: new Date().toISOString(),
+        deletedBy: view.role === 'admin' ? 'admin' : view.role
+      }
+      : m))
+  }));
+}
+
+/**
+ * When this browser last opened a thread.
+ *
+ * Kept in localStorage, keyed by who is looking, and **never written into the
+ * program document.** Two reasons: it is a fact about this device rather than
+ * about the program, and the moment read state travels between people it
+ * becomes "the tutor has seen your message and not replied", which is a
+ * compliance surface built out of a convenience feature (principle 3).
+ */
+export function readState(viewKey = loadViewAs()) {
+  try {
+    const raw = localStorage.getItem(`${READ_KEY}:${viewKey}`);
+    const parsed = raw ? JSON.parse(raw) : null;
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+/** Mark a thread read as of now, for this browser only. */
+export function markThreadRead(pairingId, viewKey = loadViewAs()) {
+  const next = { ...readState(viewKey), [pairingId]: new Date().toISOString() };
+  try {
+    localStorage.setItem(`${READ_KEY}:${viewKey}`, JSON.stringify(next));
+  } catch {
+    /* Private browsing, or a full quota. Unread badges are not worth an error. */
+  }
+  return next;
 }
 
 /**

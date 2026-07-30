@@ -159,7 +159,7 @@ function escapeCell(value) {
  * Cell codecs
  * ------------------------------------------------------------------ */
 
-/** "algebra; geometry" -> ["algebra", "geometry"]. Empty cell -> []. */
+/** "reading; writing" -> ["reading", "writing"]. Empty cell -> []. */
 export function parseList(cell) {
   return String(cell ?? '')
     .split(LIST_SEPARATOR)
@@ -167,7 +167,7 @@ export function parseList(cell) {
     .filter(Boolean);
 }
 
-/** ["algebra", "geometry"] -> "algebra; geometry". */
+/** ["reading", "writing"] -> "reading; writing". */
 export function formatList(list) {
   return (list ?? []).join(`${LIST_SEPARATOR} `);
 }

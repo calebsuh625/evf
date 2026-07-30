@@ -43,7 +43,7 @@ function tutor(overrides = {}) {
   return {
     id: 'tut_a', role: 'tutor', name: 'Avery Alpha', preferredName: 'Avery',
     timezone: LA, locale: 'en', active: true, acceptingStudents: true,
-    subjects: ['algebra', 'geometry'],
+    subjects: ['reading', 'writing'],
     levelsComfortable: ['beginner', 'intermediate'],
     interests: ['chess', 'cooking'],
     maxStudents: 2,
@@ -55,7 +55,7 @@ function student(overrides = {}) {
   return {
     id: 'stu_1', role: 'student', name: 'Ming Nu', preferredName: 'Ming',
     timezone: SH, locale: 'zh', active: true,
-    goals: ['algebra'],
+    goals: ['reading'],
     englishLevel: 'beginner',
     interests: ['chess'],
     ...overrides
@@ -91,7 +91,7 @@ describe('scorePair requirements', () => {
     const pair = scorePair(tutor(), student(), opts());
     ok(pair.eligible, `blockers: ${pair.blockers}`);
     equal(pair.overlapMinutes, 180);
-    deepEqual(pair.sharedGoals, ['algebra']);
+    deepEqual(pair.sharedGoals, ['reading']);
     deepEqual(pair.sharedInterests, ['chess']);
     ok(pair.levelOk);
   });
@@ -176,7 +176,7 @@ describe('schedule overlap is hard', () => {
 
 describe('subject and goal fit', () => {
   it('blocks a tutor who does not teach what was asked for', () => {
-    const pair = scorePair(tutor(), student({ goals: ['chemistry'] }), opts());
+    const pair = scorePair(tutor(), student({ goals: ['pronunciation'] }), opts());
     ok(pair.blockers.includes('no-shared-goal'));
   });
 
@@ -187,17 +187,17 @@ describe('subject and goal fit', () => {
   });
 
   it('scores partial coverage proportionally and says what is missing', () => {
-    const pair = scorePair(tutor(), student({ goals: ['algebra', 'physics'] }), opts());
+    const pair = scorePair(tutor(), student({ goals: ['reading', 'listening'] }), opts());
     ok(pair.eligible, 'one shared goal is enough to be worth suggesting');
-    deepEqual(pair.sharedGoals, ['algebra']);
-    deepEqual(pair.missingGoals, ['physics']);
+    deepEqual(pair.sharedGoals, ['reading']);
+    deepEqual(pair.missingGoals, ['listening']);
     equal(pair.breakdown.goals, DEFAULT_WEIGHTS.goals / 2);
     ok(codes(pair.weaknesses).includes('goals-partial'));
   });
 
   it('is case- and whitespace-insensitive', () => {
-    const pair = scorePair(tutor({ subjects: ['  Algebra '] }), student({ goals: ['ALGEBRA'] }), opts());
-    deepEqual(pair.sharedGoals, ['algebra']);
+    const pair = scorePair(tutor({ subjects: ['  Reading '] }), student({ goals: ['READING'] }), opts());
+    deepEqual(pair.sharedGoals, ['reading']);
   });
 });
 
@@ -352,7 +352,7 @@ describe('reasoning', () => {
     deepEqual(capacity.values, { used: 0, total: 3, remaining: 3 });
 
     const goals = pair.reasons.find((r) => r.code === 'goals');
-    deepEqual(goals.values.list, ['algebra']);
+    deepEqual(goals.values.list, ['reading']);
   });
 
   it('flags a single shared window as fragile', () => {
@@ -421,11 +421,11 @@ describe('expected rankings', () => {
     // Deliberately out of order in the input.
     tutor({ id: 'tut_notime' }),
     tutor({ id: 'tut_short' }),
-    tutor({ id: 'tut_partial', subjects: ['algebra'], interests: ['chess'] }),
+    tutor({ id: 'tut_partial', subjects: ['reading'], interests: ['chess'] }),
     tutor({ id: 'tut_nointerest', interests: ['football'] }),
     tutor({ id: 'tut_best' })
   ];
-  const target = student({ goals: ['algebra', 'geometry'] });
+  const target = student({ goals: ['reading', 'writing'] });
 
   it('ranks by fit, best first', () => {
     const ranked = rankCandidatesFor(target, tutors, opts({ availability }));
@@ -631,7 +631,7 @@ describe('matchingReport', () => {
   function program(overrides = {}) {
     return {
       version: 4,
-      program: { name: 'Weekend Tutoring', studentTimeZone: SH, terms: [] },
+      program: { name: 'Weekend English', studentTimeZone: SH, terms: [] },
       people: [
         tutor({ id: 'tut_a', maxStudents: 2 }),
         tutor({ id: 'tut_latin', subjects: ['latin'] }),

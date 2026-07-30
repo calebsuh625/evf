@@ -4,19 +4,19 @@
     "asOf": "2026-07-27T00:00:00.000Z",
     "quietPairing": "pair_15 (Kit Lambda / Rui Chi) last met 2026-06-21 — over four weeks before asOf.",
     "tutorAtCapacity": "p_t05, p_t01, p_t04, p_t06 and p_t09 are each at the maximum they set for themselves.",
-    "studentWithNoViableTutor": "p_s20 — weekday-only availability, wants a subject nobody teaches, at a level few tutors take.",
+    "studentWithNoViableTutor": "p_s20 — weekday-only availability in Asia/Urumqi, and asks for academic essay editing, which nobody in the program offers.",
     "dateLineEdgeCase": "pair_12 — tutor free Sat 20:00-22:00 America/Los_Angeles, student free Sun 11:00-13:00 Asia/Shanghai. Same hour, two different calendar days.",
-    "twoStudentsOneIdealTutor": "p_s06 and p_s19 have identical goals, level and availability. Only p_t05 fits either, and p_t05 caps at one student.",
+    "twoStudentsOneIdealTutor": "p_s06 and p_s19 have identical goals (pronunciation), level (intermediate) and availability (band C). p_t05 is the only tutor who teaches pronunciation AND takes intermediate, and caps at one student. p_t08 also teaches pronunciation and shares the hour, but only takes beginner and elementary — so they surface as a near miss with a level weakness rather than a clean second option.",
     "noDstTutor": "p_t07 is in America/Phoenix, which never changes clocks.",
     "unloggedSessions": "The final weekend of pair_01, pair_04, pair_09 and pair_12 is scheduled but not logged (occurred: null, loggedAt: null) — the tutor dashboard nudge points at these.",
     "notAcceptingStudents": "p_t01, p_t04, p_t05, p_t06, p_t09 and p_t12 have acceptingStudents false, which is separate from being inactive.",
     "midnightSpanningAvailability": "Students in band E are free 22:00-01:00 Asia/Shanghai, a window that crosses local midnight."
   },
-  "version": 5,
+  "version": 6,
   "exportedAt": "2026-07-27T00:00:00.000Z",
   "program": {
-    "name": "Weekend Tutoring",
-    "adminTimeZone": "America/New_York",
+    "name": "Weekend English",
+    "adminTimeZone": "America/Los_Angeles",
     "studentTimeZone": "Asia/Shanghai",
     "defaultSessionMinutes": 60,
     "sampleData": true,
@@ -43,9 +43,9 @@
       "school": "Northline High",
       "grade": 11,
       "subjects": [
-        "algebra",
-        "geometry",
-        "english reading"
+        "conversation",
+        "reading",
+        "vocabulary"
       ],
       "levelsComfortable": [
         "beginner",
@@ -75,8 +75,8 @@
       "school": "Northline High",
       "grade": 12,
       "subjects": [
-        "english conversation",
-        "english writing"
+        "conversation",
+        "writing"
       ],
       "levelsComfortable": [
         "elementary",
@@ -106,9 +106,9 @@
       "school": "Cedar Park High",
       "grade": 11,
       "subjects": [
-        "algebra",
-        "pre-calculus",
-        "coding basics"
+        "writing",
+        "exam prep",
+        "grammar"
       ],
       "levelsComfortable": [
         "intermediate",
@@ -118,9 +118,9 @@
       "acceptingStudents": true,
       "interests": [
         "chess",
-        "coding basics"
+        "coding"
       ],
-      "bio": "Runs the maths club. Likes a student who asks why.",
+      "bio": "Edits the school paper. Good with essays and with students who ask why.",
       "meetingLink": "https://meet.example.org/demo-corin-gamma",
       "createdAt": "2026-04-18T14:00:00.000Z"
     },
@@ -137,8 +137,8 @@
       "school": "Cedar Park High",
       "grade": 10,
       "subjects": [
-        "english reading",
-        "english conversation"
+        "reading",
+        "conversation"
       ],
       "levelsComfortable": [
         "beginner",
@@ -167,8 +167,8 @@
       "school": "Harbour View High",
       "grade": 12,
       "subjects": [
-        "physics",
-        "algebra"
+        "pronunciation",
+        "listening"
       ],
       "levelsComfortable": [
         "intermediate",
@@ -197,8 +197,8 @@
       "school": "Harbour View High",
       "grade": 11,
       "subjects": [
-        "biology",
-        "chemistry"
+        "grammar",
+        "vocabulary"
       ],
       "levelsComfortable": [
         "elementary",
@@ -227,9 +227,9 @@
       "school": "Mesa Ridge High",
       "grade": 12,
       "subjects": [
-        "english reading",
-        "world history",
-        "sat vocabulary"
+        "exam prep",
+        "reading",
+        "writing"
       ],
       "levelsComfortable": [
         "intermediate",
@@ -258,13 +258,12 @@
       "school": "Mesa Ridge High",
       "grade": 10,
       "subjects": [
-        "algebra",
-        "geometry"
+        "conversation",
+        "pronunciation"
       ],
       "levelsComfortable": [
         "beginner",
-        "elementary",
-        "intermediate"
+        "elementary"
       ],
       "maxStudents": 2,
       "acceptingStudents": true,
@@ -289,8 +288,8 @@
       "school": "Lakeshore High",
       "grade": 11,
       "subjects": [
-        "english conversation",
-        "english reading"
+        "conversation",
+        "reading"
       ],
       "levelsComfortable": [
         "beginner",
@@ -319,9 +318,8 @@
       "school": "Lakeshore High",
       "grade": 12,
       "subjects": [
-        "chemistry",
-        "biology",
-        "physics"
+        "listening",
+        "vocabulary"
       ],
       "levelsComfortable": [
         "intermediate",
@@ -350,8 +348,8 @@
       "school": "Riverbend High",
       "grade": 11,
       "subjects": [
-        "english writing",
-        "world history"
+        "writing",
+        "presentation skills"
       ],
       "levelsComfortable": [
         "intermediate",
@@ -380,8 +378,8 @@
       "school": "Riverbend High",
       "grade": 12,
       "subjects": [
-        "algebra",
-        "chemistry"
+        "conversation",
+        "grammar"
       ],
       "levelsComfortable": [
         "beginner",
@@ -410,8 +408,8 @@
       "grade": 8,
       "englishLevel": "beginner",
       "goals": [
-        "algebra",
-        "english reading"
+        "reading",
+        "vocabulary"
       ],
       "interests": [
         "basketball",
@@ -435,7 +433,7 @@
       "grade": 9,
       "englishLevel": "intermediate",
       "goals": [
-        "english conversation"
+        "conversation"
       ],
       "interests": [
         "k-pop",
@@ -459,8 +457,8 @@
       "grade": 10,
       "englishLevel": "intermediate",
       "goals": [
-        "algebra",
-        "pre-calculus"
+        "writing",
+        "grammar"
       ],
       "interests": [
         "chess",
@@ -484,7 +482,7 @@
       "grade": 7,
       "englishLevel": "beginner",
       "goals": [
-        "english reading"
+        "reading"
       ],
       "interests": [
         "anime",
@@ -508,7 +506,7 @@
       "grade": 9,
       "englishLevel": "elementary",
       "goals": [
-        "biology"
+        "grammar"
       ],
       "interests": [
         "photography"
@@ -531,7 +529,7 @@
       "grade": 10,
       "englishLevel": "intermediate",
       "goals": [
-        "physics"
+        "pronunciation"
       ],
       "interests": [
         "astronomy",
@@ -555,8 +553,8 @@
       "grade": 8,
       "englishLevel": "elementary",
       "goals": [
-        "english conversation",
-        "english reading"
+        "conversation",
+        "reading"
       ],
       "interests": [
         "football",
@@ -580,8 +578,8 @@
       "grade": 11,
       "englishLevel": "advanced",
       "goals": [
-        "world history",
-        "sat vocabulary"
+        "exam prep",
+        "writing"
       ],
       "interests": [
         "photography",
@@ -605,7 +603,7 @@
       "grade": 9,
       "englishLevel": "intermediate",
       "goals": [
-        "chemistry"
+        "listening"
       ],
       "interests": [
         "cooking"
@@ -628,8 +626,8 @@
       "grade": 8,
       "englishLevel": "beginner",
       "goals": [
-        "geometry",
-        "algebra"
+        "conversation",
+        "pronunciation"
       ],
       "interests": [
         "skateboarding",
@@ -653,7 +651,7 @@
       "grade": 10,
       "englishLevel": "intermediate",
       "goals": [
-        "english writing"
+        "writing"
       ],
       "interests": [
         "drawing",
@@ -677,8 +675,8 @@
       "grade": 7,
       "englishLevel": "beginner",
       "goals": [
-        "english reading",
-        "english conversation"
+        "reading",
+        "conversation"
       ],
       "interests": [
         "basketball"
@@ -701,11 +699,11 @@
       "grade": 11,
       "englishLevel": "advanced",
       "goals": [
-        "pre-calculus",
-        "coding basics"
+        "exam prep",
+        "writing"
       ],
       "interests": [
-        "coding basics",
+        "coding",
         "chess"
       ],
       "guardianName": "Guardian of Tian Alpha",
@@ -726,7 +724,7 @@
       "grade": 9,
       "englishLevel": "elementary",
       "goals": [
-        "english conversation"
+        "conversation"
       ],
       "interests": [
         "k-pop"
@@ -749,8 +747,8 @@
       "grade": 10,
       "englishLevel": "intermediate",
       "goals": [
-        "chemistry",
-        "biology"
+        "vocabulary",
+        "grammar"
       ],
       "interests": [
         "cooking",
@@ -774,7 +772,7 @@
       "grade": 8,
       "englishLevel": "beginner",
       "goals": [
-        "english reading"
+        "reading"
       ],
       "interests": [
         "minecraft"
@@ -797,7 +795,7 @@
       "grade": 9,
       "englishLevel": "elementary",
       "goals": [
-        "english conversation"
+        "conversation"
       ],
       "interests": [
         "piano"
@@ -818,9 +816,9 @@
       "locale": "zh",
       "active": true,
       "grade": 10,
-      "englishLevel": "intermediate",
+      "englishLevel": "elementary",
       "goals": [
-        "geometry"
+        "pronunciation"
       ],
       "interests": [
         "skateboarding"
@@ -843,7 +841,7 @@
       "grade": 10,
       "englishLevel": "intermediate",
       "goals": [
-        "physics"
+        "pronunciation"
       ],
       "interests": [
         "astronomy"
@@ -866,7 +864,7 @@
       "grade": 11,
       "englishLevel": "advanced",
       "goals": [
-        "ap statistics"
+        "academic essay editing"
       ],
       "interests": [
         "chess"
@@ -1047,7 +1045,7 @@
       "status": "ended",
       "startedAt": "2026-04-16T12:00:00.000Z",
       "endedAt": "2026-05-17T12:00:00.000Z",
-      "notes": "Reassigned so the student could get pre-calculus with a tutor who teaches it."
+      "notes": "Reassigned so the student could work on grammar with a tutor who teaches it."
     },
     {
       "id": "pair_20",
@@ -1069,7 +1067,7 @@
       "prepMinutes": 15,
       "followupMinutes": 10,
       "covered": "Practised introducing yourself and asking questions.",
-      "homework": "Write three sentences about the weekend.",
+      "homework": "Say the six words out loud once a day.",
       "loggedAt": "2026-04-19T13:30:00.000Z"
     },
     {
@@ -1081,7 +1079,7 @@
       "prepMinutes": 10,
       "followupMinutes": 15,
       "covered": "Balanced simple chemical equations.",
-      "homework": "Read the next chapter.",
+      "homework": "Write five sentences about your weekend.",
       "loggedAt": "2026-04-19T13:15:00.000Z"
     },
     {
@@ -1093,7 +1091,7 @@
       "prepMinutes": 10,
       "followupMinutes": 0,
       "covered": "Went back over material from two weeks ago until it clicked.",
-      "homework": "Five practice problems.",
+      "homework": "Read the next chapter and note any word you did not know.",
       "loggedAt": "2026-04-19T13:15:00.000Z"
     },
     {
@@ -1129,7 +1127,7 @@
       "prepMinutes": 0,
       "followupMinutes": 0,
       "covered": "Practised introducing yourself and asking questions.",
-      "homework": "Try the last two questions again.",
+      "homework": "Rewrite the second paragraph with what we talked about.",
       "loggedAt": "2026-04-19T14:30:00.000Z"
     },
     {
@@ -1141,7 +1139,7 @@
       "prepMinutes": 10,
       "followupMinutes": 10,
       "covered": "Went back over material from two weeks ago until it clicked.",
-      "homework": "Five practice problems.",
+      "homework": "Read the next chapter and note any word you did not know.",
       "loggedAt": "2026-04-25T14:30:00.000Z"
     },
     {
@@ -1153,7 +1151,7 @@
       "prepMinutes": 15,
       "followupMinutes": 5,
       "covered": "Balanced simple chemical equations.",
-      "homework": "Try the last two questions again.",
+      "homework": "Rewrite the second paragraph with what we talked about.",
       "loggedAt": "2026-04-25T15:00:00.000Z"
     },
     {
@@ -1165,7 +1163,7 @@
       "prepMinutes": 10,
       "followupMinutes": 15,
       "covered": "Practised introducing yourself and asking questions.",
-      "homework": "Finish the worksheet we started.",
+      "homework": "Finish the reading we started.",
       "loggedAt": "2026-04-25T14:30:00.000Z"
     },
     {
@@ -1177,7 +1175,7 @@
       "prepMinutes": 15,
       "followupMinutes": 15,
       "covered": "Looked at graphs and what they mean.",
-      "homework": "Write three sentences about the weekend.",
+      "homework": "Say the six words out loud once a day.",
       "loggedAt": "2026-04-25T14:30:00.000Z"
     },
     {
@@ -1213,7 +1211,7 @@
       "prepMinutes": 20,
       "followupMinutes": 0,
       "covered": "Free conversation for the first half, then vocabulary.",
-      "homework": "Five practice problems.",
+      "homework": "Read the next chapter and note any word you did not know.",
       "loggedAt": "2026-04-26T02:30:00.000Z"
     },
     {
@@ -1237,7 +1235,7 @@
       "prepMinutes": 10,
       "followupMinutes": 0,
       "covered": "Practice problems, then a break, then more practice problems.",
-      "homework": "Try the last two questions again.",
+      "homework": "Rewrite the second paragraph with what we talked about.",
       "loggedAt": "2026-04-26T14:00:00.000Z"
     },
     {
@@ -1249,7 +1247,7 @@
       "prepMinutes": 20,
       "followupMinutes": 0,
       "covered": "Worked through one-step equations.",
-      "homework": "Five practice problems.",
+      "homework": "Read the next chapter and note any word you did not know.",
       "loggedAt": "2026-04-26T13:45:00.000Z"
     },
     {
@@ -1261,7 +1259,7 @@
       "prepMinutes": 10,
       "followupMinutes": 5,
       "covered": "Reviewed last week's homework, then started on word problems.",
-      "homework": "Read the next chapter.",
+      "homework": "Write five sentences about your weekend.",
       "loggedAt": "2026-04-26T13:30:00.000Z"
     },
     {
@@ -1309,7 +1307,7 @@
       "prepMinutes": 20,
       "followupMinutes": 10,
       "covered": "Worked through one-step equations.",
-      "homework": "Five practice problems.",
+      "homework": "Read the next chapter and note any word you did not know.",
       "loggedAt": "2026-05-02T14:30:00.000Z"
     },
     {
@@ -1333,7 +1331,7 @@
       "prepMinutes": 0,
       "followupMinutes": 0,
       "covered": "Practised introducing yourself and asking questions.",
-      "homework": "Write three sentences about the weekend.",
+      "homework": "Say the six words out loud once a day.",
       "loggedAt": "2026-05-02T14:30:00.000Z"
     },
     {
@@ -1345,7 +1343,7 @@
       "prepMinutes": 5,
       "followupMinutes": 0,
       "covered": "Free conversation for the first half, then vocabulary.",
-      "homework": "Finish the worksheet we started.",
+      "homework": "Finish the reading we started.",
       "loggedAt": "2026-05-02T14:30:00.000Z"
     },
     {
@@ -1357,7 +1355,7 @@
       "prepMinutes": 10,
       "followupMinutes": 10,
       "covered": "Practice problems, then a break, then more practice problems.",
-      "homework": "Try the last two questions again.",
+      "homework": "Rewrite the second paragraph with what we talked about.",
       "loggedAt": "2026-05-02T14:15:00.000Z"
     },
     {
@@ -1381,7 +1379,7 @@
       "prepMinutes": 5,
       "followupMinutes": 0,
       "covered": "Practised introducing yourself and asking questions.",
-      "homework": "Write three sentences about the weekend.",
+      "homework": "Say the six words out loud once a day.",
       "loggedAt": "2026-05-02T15:30:00.000Z"
     },
     {
@@ -1429,7 +1427,7 @@
       "prepMinutes": 5,
       "followupMinutes": 15,
       "covered": "Looked at graphs and what they mean.",
-      "homework": "Five practice problems.",
+      "homework": "Read the next chapter and note any word you did not know.",
       "loggedAt": "2026-05-03T14:00:00.000Z"
     },
     {
@@ -1453,7 +1451,7 @@
       "prepMinutes": 5,
       "followupMinutes": 0,
       "covered": "Started a new unit. Slower going than expected, which is fine.",
-      "homework": "Write three sentences about the weekend.",
+      "homework": "Say the six words out loud once a day.",
       "loggedAt": "2026-05-03T14:45:00.000Z"
     },
     {
@@ -1501,7 +1499,7 @@
       "prepMinutes": 0,
       "followupMinutes": 5,
       "covered": "Practised introducing yourself and asking questions.",
-      "homework": "Write three sentences about the weekend.",
+      "homework": "Say the six words out loud once a day.",
       "loggedAt": "2026-05-09T14:30:00.000Z"
     },
     {
@@ -1513,7 +1511,7 @@
       "prepMinutes": 10,
       "followupMinutes": 0,
       "covered": "Read a short story together and talked about it.",
-      "homework": "Five practice problems.",
+      "homework": "Read the next chapter and note any word you did not know.",
       "loggedAt": "2026-05-09T14:30:00.000Z"
     },
     {
@@ -1597,7 +1595,7 @@
       "prepMinutes": 10,
       "followupMinutes": 10,
       "covered": "Worked through one-step equations.",
-      "homework": "Five practice problems.",
+      "homework": "Read the next chapter and note any word you did not know.",
       "loggedAt": "2026-05-10T13:30:00.000Z"
     },
     {
@@ -1609,7 +1607,7 @@
       "prepMinutes": 10,
       "followupMinutes": 0,
       "covered": "Reviewed last week's homework, then started on word problems.",
-      "homework": "Read the next chapter.",
+      "homework": "Write five sentences about your weekend.",
       "loggedAt": "2026-05-10T14:00:00.000Z"
     },
     {
@@ -1621,7 +1619,7 @@
       "prepMinutes": 20,
       "followupMinutes": 5,
       "covered": "Went back over material from two weeks ago until it clicked.",
-      "homework": "Try the last two questions again.",
+      "homework": "Rewrite the second paragraph with what we talked about.",
       "loggedAt": "2026-05-10T13:30:00.000Z"
     },
     {
@@ -1633,7 +1631,7 @@
       "prepMinutes": 20,
       "followupMinutes": 5,
       "covered": "Practised introducing yourself and asking questions.",
-      "homework": "Write three sentences about the weekend.",
+      "homework": "Say the six words out loud once a day.",
       "loggedAt": "2026-05-10T14:00:00.000Z"
     },
     {
@@ -1657,7 +1655,7 @@
       "prepMinutes": 5,
       "followupMinutes": 0,
       "covered": "Practice problems, then a break, then more practice problems.",
-      "homework": "Write three sentences about the weekend.",
+      "homework": "Say the six words out loud once a day.",
       "loggedAt": "2026-05-10T14:30:00.000Z"
     },
     {
@@ -1669,7 +1667,7 @@
       "prepMinutes": 0,
       "followupMinutes": 0,
       "covered": "Talked through the homework that did not make sense.",
-      "homework": "Write three sentences about the weekend.",
+      "homework": "Say the six words out loud once a day.",
       "loggedAt": "2026-05-10T14:30:00.000Z"
     },
     {
@@ -1777,7 +1775,7 @@
       "prepMinutes": 5,
       "followupMinutes": 15,
       "covered": "Balanced simple chemical equations.",
-      "homework": "Try the last two questions again.",
+      "homework": "Rewrite the second paragraph with what we talked about.",
       "loggedAt": "2026-05-17T02:30:00.000Z"
     },
     {
@@ -1801,7 +1799,7 @@
       "prepMinutes": 15,
       "followupMinutes": 10,
       "covered": "Practised introducing yourself and asking questions.",
-      "homework": "Five practice problems.",
+      "homework": "Read the next chapter and note any word you did not know.",
       "loggedAt": "2026-05-17T13:45:00.000Z"
     },
     {
@@ -1813,7 +1811,7 @@
       "prepMinutes": 20,
       "followupMinutes": 0,
       "covered": "Free conversation for the first half, then vocabulary.",
-      "homework": "Try the last two questions again.",
+      "homework": "Rewrite the second paragraph with what we talked about.",
       "loggedAt": "2026-05-17T13:30:00.000Z"
     },
     {
@@ -1861,7 +1859,7 @@
       "prepMinutes": 15,
       "followupMinutes": 15,
       "covered": "Started a new unit. Slower going than expected, which is fine.",
-      "homework": "Try the last two questions again.",
+      "homework": "Rewrite the second paragraph with what we talked about.",
       "loggedAt": "2026-05-17T14:45:00.000Z"
     },
     {
@@ -1873,7 +1871,7 @@
       "prepMinutes": 20,
       "followupMinutes": 5,
       "covered": "Reviewed last week's homework, then started on word problems.",
-      "homework": "Finish the worksheet we started.",
+      "homework": "Finish the reading we started.",
       "loggedAt": "2026-05-17T14:15:00.000Z"
     },
     {
@@ -1945,7 +1943,7 @@
       "prepMinutes": 10,
       "followupMinutes": 0,
       "covered": "Free conversation for the first half, then vocabulary.",
-      "homework": "Five practice problems.",
+      "homework": "Read the next chapter and note any word you did not know.",
       "loggedAt": "2026-05-23T15:30:00.000Z"
     },
     {
@@ -1969,7 +1967,7 @@
       "prepMinutes": 20,
       "followupMinutes": 10,
       "covered": "Worked through one-step equations.",
-      "homework": "Five practice problems.",
+      "homework": "Read the next chapter and note any word you did not know.",
       "loggedAt": "2026-05-23T16:00:00.000Z"
     },
     {
@@ -1981,7 +1979,7 @@
       "prepMinutes": 10,
       "followupMinutes": 0,
       "covered": "Read a short story together and talked about it.",
-      "homework": "Try the last two questions again.",
+      "homework": "Rewrite the second paragraph with what we talked about.",
       "loggedAt": "2026-05-23T15:30:00.000Z"
     },
     {
@@ -1993,7 +1991,7 @@
       "prepMinutes": 10,
       "followupMinutes": 5,
       "covered": "Worked through one-step equations.",
-      "homework": "Write three sentences about the weekend.",
+      "homework": "Say the six words out loud once a day.",
       "loggedAt": "2026-05-24T02:15:00.000Z"
     },
     {
@@ -2053,7 +2051,7 @@
       "prepMinutes": 10,
       "followupMinutes": 0,
       "covered": "Worked through one-step equations.",
-      "homework": "Finish the worksheet we started.",
+      "homework": "Finish the reading we started.",
       "loggedAt": "2026-05-24T14:30:00.000Z"
     },
     {
@@ -2065,7 +2063,7 @@
       "prepMinutes": 10,
       "followupMinutes": 10,
       "covered": "Worked through one-step equations.",
-      "homework": "Five practice problems.",
+      "homework": "Read the next chapter and note any word you did not know.",
       "loggedAt": "2026-05-24T14:30:00.000Z"
     },
     {
@@ -2077,7 +2075,7 @@
       "prepMinutes": 5,
       "followupMinutes": 15,
       "covered": "Free conversation for the first half, then vocabulary.",
-      "homework": "Finish the worksheet we started.",
+      "homework": "Finish the reading we started.",
       "loggedAt": "2026-05-24T14:15:00.000Z"
     },
     {
@@ -2113,7 +2111,7 @@
       "prepMinutes": 5,
       "followupMinutes": 0,
       "covered": "Worked through one-step equations.",
-      "homework": "Finish the worksheet we started.",
+      "homework": "Finish the reading we started.",
       "loggedAt": "2026-05-30T14:30:00.000Z"
     },
     {
@@ -2137,7 +2135,7 @@
       "prepMinutes": 0,
       "followupMinutes": 5,
       "covered": "Practice problems, then a break, then more practice problems.",
-      "homework": "Try the last two questions again.",
+      "homework": "Rewrite the second paragraph with what we talked about.",
       "loggedAt": "2026-05-30T14:45:00.000Z"
     },
     {
@@ -2149,7 +2147,7 @@
       "prepMinutes": 10,
       "followupMinutes": 0,
       "covered": "Went back over material from two weeks ago until it clicked.",
-      "homework": "Write three sentences about the weekend.",
+      "homework": "Say the six words out loud once a day.",
       "loggedAt": "2026-05-30T15:30:00.000Z"
     },
     {
@@ -2185,7 +2183,7 @@
       "prepMinutes": 15,
       "followupMinutes": 5,
       "covered": "Started a new unit. Slower going than expected, which is fine.",
-      "homework": "Finish the worksheet we started.",
+      "homework": "Finish the reading we started.",
       "loggedAt": "2026-05-30T15:15:00.000Z"
     },
     {
@@ -2197,7 +2195,7 @@
       "prepMinutes": 5,
       "followupMinutes": 0,
       "covered": "Went back over material from two weeks ago until it clicked.",
-      "homework": "Write three sentences about the weekend.",
+      "homework": "Say the six words out loud once a day.",
       "loggedAt": "2026-05-31T02:30:00.000Z"
     },
     {
@@ -2209,7 +2207,7 @@
       "prepMinutes": 15,
       "followupMinutes": 5,
       "covered": "Looked at graphs and what they mean.",
-      "homework": "Try the last two questions again.",
+      "homework": "Rewrite the second paragraph with what we talked about.",
       "loggedAt": "2026-05-31T05:00:00.000Z"
     },
     {
@@ -2221,7 +2219,7 @@
       "prepMinutes": 10,
       "followupMinutes": 0,
       "covered": "Practice problems, then a break, then more practice problems.",
-      "homework": "Try the last two questions again.",
+      "homework": "Rewrite the second paragraph with what we talked about.",
       "loggedAt": "2026-05-31T13:30:00.000Z"
     },
     {
@@ -2269,7 +2267,7 @@
       "prepMinutes": 10,
       "followupMinutes": 15,
       "covered": "Looked at graphs and what they mean.",
-      "homework": "Write three sentences about the weekend.",
+      "homework": "Say the six words out loud once a day.",
       "loggedAt": "2026-05-31T14:30:00.000Z"
     },
     {
@@ -2281,7 +2279,7 @@
       "prepMinutes": 10,
       "followupMinutes": 15,
       "covered": "Reviewed last week's homework, then started on word problems.",
-      "homework": "Five practice problems.",
+      "homework": "Read the next chapter and note any word you did not know.",
       "loggedAt": "2026-05-31T14:30:00.000Z"
     },
     {
@@ -2341,7 +2339,7 @@
       "prepMinutes": 0,
       "followupMinutes": 5,
       "covered": "Talked through the homework that did not make sense.",
-      "homework": "Five practice problems.",
+      "homework": "Read the next chapter and note any word you did not know.",
       "loggedAt": "2026-06-06T14:45:00.000Z"
     },
     {
@@ -2365,7 +2363,7 @@
       "prepMinutes": 10,
       "followupMinutes": 0,
       "covered": "Went back over material from two weeks ago until it clicked.",
-      "homework": "Write three sentences about the weekend.",
+      "homework": "Say the six words out loud once a day.",
       "loggedAt": "2026-06-06T16:00:00.000Z"
     },
     {
@@ -2389,7 +2387,7 @@
       "prepMinutes": 15,
       "followupMinutes": 10,
       "covered": "Reviewed last week's homework, then started on word problems.",
-      "homework": "Read the next chapter.",
+      "homework": "Write five sentences about your weekend.",
       "loggedAt": "2026-06-06T15:30:00.000Z"
     },
     {
@@ -2401,7 +2399,7 @@
       "prepMinutes": 10,
       "followupMinutes": 0,
       "covered": "Balanced simple chemical equations.",
-      "homework": "Try the last two questions again.",
+      "homework": "Rewrite the second paragraph with what we talked about.",
       "loggedAt": "2026-06-07T02:30:00.000Z"
     },
     {
@@ -2413,7 +2411,7 @@
       "prepMinutes": 5,
       "followupMinutes": 10,
       "covered": "Went back over material from two weeks ago until it clicked.",
-      "homework": "Finish the worksheet we started.",
+      "homework": "Finish the reading we started.",
       "loggedAt": "2026-06-07T04:30:00.000Z"
     },
     {
@@ -2425,7 +2423,7 @@
       "prepMinutes": 5,
       "followupMinutes": 0,
       "covered": "Talked through the homework that did not make sense.",
-      "homework": "Five practice problems.",
+      "homework": "Read the next chapter and note any word you did not know.",
       "loggedAt": "2026-06-07T13:30:00.000Z"
     },
     {
@@ -2437,7 +2435,7 @@
       "prepMinutes": 15,
       "followupMinutes": 15,
       "covered": "Practice problems, then a break, then more practice problems.",
-      "homework": "Write three sentences about the weekend.",
+      "homework": "Say the six words out loud once a day.",
       "loggedAt": "2026-06-07T13:45:00.000Z"
     },
     {
@@ -2449,7 +2447,7 @@
       "prepMinutes": 0,
       "followupMinutes": 10,
       "covered": "Practised introducing yourself and asking questions.",
-      "homework": "Five practice problems.",
+      "homework": "Read the next chapter and note any word you did not know.",
       "loggedAt": "2026-06-07T14:30:00.000Z"
     },
     {
@@ -2473,7 +2471,7 @@
       "prepMinutes": 5,
       "followupMinutes": 10,
       "covered": "Reviewed last week's homework, then started on word problems.",
-      "homework": "Finish the worksheet we started.",
+      "homework": "Finish the reading we started.",
       "loggedAt": "2026-06-07T14:15:00.000Z"
     },
     {
@@ -2485,7 +2483,7 @@
       "prepMinutes": 0,
       "followupMinutes": 10,
       "covered": "Practised introducing yourself and asking questions.",
-      "homework": "Write three sentences about the weekend.",
+      "homework": "Say the six words out loud once a day.",
       "loggedAt": "2026-06-13T14:15:00.000Z"
     },
     {
@@ -2497,7 +2495,7 @@
       "prepMinutes": 0,
       "followupMinutes": 0,
       "covered": "Went back over material from two weeks ago until it clicked.",
-      "homework": "Finish the worksheet we started.",
+      "homework": "Finish the reading we started.",
       "loggedAt": "2026-06-13T15:00:00.000Z"
     },
     {
@@ -2521,7 +2519,7 @@
       "prepMinutes": 5,
       "followupMinutes": 15,
       "covered": "Reviewed last week's homework, then started on word problems.",
-      "homework": "Read the next chapter.",
+      "homework": "Write five sentences about your weekend.",
       "loggedAt": "2026-06-13T15:30:00.000Z"
     },
     {
@@ -2533,7 +2531,7 @@
       "prepMinutes": 10,
       "followupMinutes": 0,
       "covered": "Looked at graphs and what they mean.",
-      "homework": "Try the last two questions again.",
+      "homework": "Rewrite the second paragraph with what we talked about.",
       "loggedAt": "2026-06-13T15:30:00.000Z"
     },
     {
@@ -2557,7 +2555,7 @@
       "prepMinutes": 5,
       "followupMinutes": 5,
       "covered": "Talked through the homework that did not make sense.",
-      "homework": "Finish the worksheet we started.",
+      "homework": "Finish the reading we started.",
       "loggedAt": "2026-06-14T02:30:00.000Z"
     },
     {
@@ -2581,7 +2579,7 @@
       "prepMinutes": 15,
       "followupMinutes": 5,
       "covered": "Worked through one-step equations.",
-      "homework": "Finish the worksheet we started.",
+      "homework": "Finish the reading we started.",
       "loggedAt": "2026-06-14T13:45:00.000Z"
     },
     {
@@ -2593,7 +2591,7 @@
       "prepMinutes": 10,
       "followupMinutes": 5,
       "covered": "Read a short story together and talked about it.",
-      "homework": "Try the last two questions again.",
+      "homework": "Rewrite the second paragraph with what we talked about.",
       "loggedAt": "2026-06-14T13:30:00.000Z"
     },
     {
@@ -2605,7 +2603,7 @@
       "prepMinutes": 5,
       "followupMinutes": 0,
       "covered": "Looked at graphs and what they mean.",
-      "homework": "Write three sentences about the weekend.",
+      "homework": "Say the six words out loud once a day.",
       "loggedAt": "2026-06-14T14:30:00.000Z"
     },
     {
@@ -2653,7 +2651,7 @@
       "prepMinutes": 10,
       "followupMinutes": 10,
       "covered": "Balanced simple chemical equations.",
-      "homework": "Try the last two questions again.",
+      "homework": "Rewrite the second paragraph with what we talked about.",
       "loggedAt": "2026-06-20T14:45:00.000Z"
     },
     {
@@ -2713,7 +2711,7 @@
       "prepMinutes": 10,
       "followupMinutes": 0,
       "covered": "Talked through the homework that did not make sense.",
-      "homework": "Read the next chapter.",
+      "homework": "Write five sentences about your weekend.",
       "loggedAt": "2026-06-20T15:30:00.000Z"
     },
     {
@@ -2749,7 +2747,7 @@
       "prepMinutes": 5,
       "followupMinutes": 0,
       "covered": "Started a new unit. Slower going than expected, which is fine.",
-      "homework": "Write three sentences about the weekend.",
+      "homework": "Say the six words out loud once a day.",
       "loggedAt": "2026-06-21T04:30:00.000Z"
     },
     {
@@ -2809,7 +2807,7 @@
       "prepMinutes": 10,
       "followupMinutes": 5,
       "covered": "Free conversation for the first half, then vocabulary.",
-      "homework": "Five practice problems.",
+      "homework": "Read the next chapter and note any word you did not know.",
       "loggedAt": "2026-06-27T14:30:00.000Z"
     },
     {
@@ -2821,7 +2819,7 @@
       "prepMinutes": 5,
       "followupMinutes": 0,
       "covered": "Practice problems, then a break, then more practice problems.",
-      "homework": "Try the last two questions again.",
+      "homework": "Rewrite the second paragraph with what we talked about.",
       "loggedAt": "2026-06-27T14:30:00.000Z"
     },
     {
@@ -2833,7 +2831,7 @@
       "prepMinutes": 5,
       "followupMinutes": 0,
       "covered": "Practice problems, then a break, then more practice problems.",
-      "homework": "Read the next chapter.",
+      "homework": "Write five sentences about your weekend.",
       "loggedAt": "2026-06-27T14:30:00.000Z"
     },
     {
@@ -2881,7 +2879,7 @@
       "prepMinutes": 0,
       "followupMinutes": 0,
       "covered": "Went back over material from two weeks ago until it clicked.",
-      "homework": "Write three sentences about the weekend.",
+      "homework": "Say the six words out loud once a day.",
       "loggedAt": "2026-06-27T15:30:00.000Z"
     },
     {
@@ -2893,7 +2891,7 @@
       "prepMinutes": 20,
       "followupMinutes": 0,
       "covered": "Balanced simple chemical equations.",
-      "homework": "Write three sentences about the weekend.",
+      "homework": "Say the six words out loud once a day.",
       "loggedAt": "2026-06-27T15:30:00.000Z"
     },
     {
@@ -2929,7 +2927,7 @@
       "prepMinutes": 15,
       "followupMinutes": 15,
       "covered": "Went over the parts of a cell.",
-      "homework": "Read the next chapter.",
+      "homework": "Write five sentences about your weekend.",
       "loggedAt": "2026-06-28T14:00:00.000Z"
     },
     {
@@ -2953,7 +2951,7 @@
       "prepMinutes": 0,
       "followupMinutes": 10,
       "covered": "Started a new unit. Slower going than expected, which is fine.",
-      "homework": "Finish the worksheet we started.",
+      "homework": "Finish the reading we started.",
       "loggedAt": "2026-06-28T15:00:00.000Z"
     },
     {
@@ -2965,7 +2963,7 @@
       "prepMinutes": 15,
       "followupMinutes": 15,
       "covered": "Started a new unit. Slower going than expected, which is fine.",
-      "homework": "Five practice problems.",
+      "homework": "Read the next chapter and note any word you did not know.",
       "loggedAt": "2026-06-28T14:30:00.000Z"
     },
     {
@@ -2989,7 +2987,7 @@
       "prepMinutes": 5,
       "followupMinutes": 0,
       "covered": "Reviewed last week's homework, then started on word problems.",
-      "homework": "Write three sentences about the weekend.",
+      "homework": "Say the six words out loud once a day.",
       "loggedAt": "2026-07-04T14:30:00.000Z"
     },
     {
@@ -3109,7 +3107,7 @@
       "prepMinutes": 5,
       "followupMinutes": 15,
       "covered": "Practised introducing yourself and asking questions.",
-      "homework": "Five practice problems.",
+      "homework": "Read the next chapter and note any word you did not know.",
       "loggedAt": "2026-07-05T14:15:00.000Z"
     },
     {
@@ -3121,7 +3119,7 @@
       "prepMinutes": 5,
       "followupMinutes": 10,
       "covered": "Read a short story together and talked about it.",
-      "homework": "Read the next chapter.",
+      "homework": "Write five sentences about your weekend.",
       "loggedAt": "2026-07-05T14:30:00.000Z"
     },
     {
@@ -3133,7 +3131,7 @@
       "prepMinutes": 10,
       "followupMinutes": 0,
       "covered": "Started a new unit. Slower going than expected, which is fine.",
-      "homework": "Try the last two questions again.",
+      "homework": "Rewrite the second paragraph with what we talked about.",
       "loggedAt": "2026-07-11T14:30:00.000Z"
     },
     {
@@ -3157,7 +3155,7 @@
       "prepMinutes": 10,
       "followupMinutes": 5,
       "covered": "Practised introducing yourself and asking questions.",
-      "homework": "Write three sentences about the weekend.",
+      "homework": "Say the six words out loud once a day.",
       "loggedAt": "2026-07-11T14:30:00.000Z"
     },
     {
@@ -3169,7 +3167,7 @@
       "prepMinutes": 20,
       "followupMinutes": 5,
       "covered": "Talked through the homework that did not make sense.",
-      "homework": "Five practice problems.",
+      "homework": "Read the next chapter and note any word you did not know.",
       "loggedAt": "2026-07-11T14:30:00.000Z"
     },
     {
@@ -3181,7 +3179,7 @@
       "prepMinutes": 15,
       "followupMinutes": 15,
       "covered": "Started a new unit. Slower going than expected, which is fine.",
-      "homework": "Finish the worksheet we started.",
+      "homework": "Finish the reading we started.",
       "loggedAt": "2026-07-11T15:30:00.000Z"
     },
     {
@@ -3193,7 +3191,7 @@
       "prepMinutes": 15,
       "followupMinutes": 0,
       "covered": "Practice problems, then a break, then more practice problems.",
-      "homework": "Read the next chapter.",
+      "homework": "Write five sentences about your weekend.",
       "loggedAt": "2026-07-11T15:30:00.000Z"
     },
     {
@@ -3205,7 +3203,7 @@
       "prepMinutes": 20,
       "followupMinutes": 0,
       "covered": "Reviewed last week's homework, then started on word problems.",
-      "homework": "Read the next chapter.",
+      "homework": "Write five sentences about your weekend.",
       "loggedAt": "2026-07-11T16:00:00.000Z"
     },
     {
@@ -3229,7 +3227,7 @@
       "prepMinutes": 0,
       "followupMinutes": 0,
       "covered": "Went back over material from two weeks ago until it clicked.",
-      "homework": "Five practice problems.",
+      "homework": "Read the next chapter and note any word you did not know.",
       "loggedAt": "2026-07-12T04:30:00.000Z"
     },
     {
@@ -3265,7 +3263,7 @@
       "prepMinutes": 5,
       "followupMinutes": 5,
       "covered": "Free conversation for the first half, then vocabulary.",
-      "homework": "Finish the worksheet we started.",
+      "homework": "Finish the reading we started.",
       "loggedAt": "2026-07-12T14:30:00.000Z"
     },
     {
@@ -3289,7 +3287,7 @@
       "prepMinutes": 15,
       "followupMinutes": 5,
       "covered": "Free conversation for the first half, then vocabulary.",
-      "homework": "Write three sentences about the weekend.",
+      "homework": "Say the six words out loud once a day.",
       "loggedAt": "2026-07-18T15:00:00.000Z"
     },
     {
@@ -3301,7 +3299,7 @@
       "prepMinutes": 0,
       "followupMinutes": 0,
       "covered": "Practice problems, then a break, then more practice problems.",
-      "homework": "Five practice problems.",
+      "homework": "Read the next chapter and note any word you did not know.",
       "loggedAt": "2026-07-18T14:15:00.000Z"
     },
     {
@@ -3313,7 +3311,7 @@
       "prepMinutes": 5,
       "followupMinutes": 5,
       "covered": "Reviewed last week's homework, then started on word problems.",
-      "homework": "Try the last two questions again.",
+      "homework": "Rewrite the second paragraph with what we talked about.",
       "loggedAt": "2026-07-18T14:30:00.000Z"
     },
     {
@@ -3337,7 +3335,7 @@
       "prepMinutes": 20,
       "followupMinutes": 0,
       "covered": "Went over the parts of a cell.",
-      "homework": "Read the next chapter.",
+      "homework": "Write five sentences about your weekend.",
       "loggedAt": "2026-07-18T15:30:00.000Z"
     },
     {
@@ -3361,7 +3359,7 @@
       "prepMinutes": 10,
       "followupMinutes": 0,
       "covered": "Talked through the homework that did not make sense.",
-      "homework": "Finish the worksheet we started.",
+      "homework": "Finish the reading we started.",
       "loggedAt": "2026-07-18T15:30:00.000Z"
     },
     {
@@ -3385,7 +3383,7 @@
       "prepMinutes": 0,
       "followupMinutes": 0,
       "covered": "Practice problems, then a break, then more practice problems.",
-      "homework": "Write three sentences about the weekend.",
+      "homework": "Say the six words out loud once a day.",
       "loggedAt": "2026-07-19T04:30:00.000Z"
     },
     {
@@ -3421,7 +3419,7 @@
       "prepMinutes": 10,
       "followupMinutes": 10,
       "covered": "Started a new unit. Slower going than expected, which is fine.",
-      "homework": "Read the next chapter.",
+      "homework": "Write five sentences about your weekend.",
       "loggedAt": "2026-07-19T14:30:00.000Z"
     },
     {
@@ -3433,7 +3431,7 @@
       "prepMinutes": 15,
       "followupMinutes": 15,
       "covered": "Looked at graphs and what they mean.",
-      "homework": "Write three sentences about the weekend.",
+      "homework": "Say the six words out loud once a day.",
       "loggedAt": "2026-07-19T14:30:00.000Z"
     },
     {
@@ -3457,7 +3455,7 @@
       "prepMinutes": 10,
       "followupMinutes": 0,
       "covered": "Practised introducing yourself and asking questions.",
-      "homework": "Read the next chapter.",
+      "homework": "Write five sentences about your weekend.",
       "loggedAt": "2026-07-25T14:15:00.000Z"
     },
     {
@@ -3505,7 +3503,7 @@
       "prepMinutes": 10,
       "followupMinutes": 0,
       "covered": "Went over the parts of a cell.",
-      "homework": "Read the next chapter.",
+      "homework": "Write five sentences about your weekend.",
       "loggedAt": "2026-07-25T15:30:00.000Z"
     },
     {
@@ -3529,7 +3527,7 @@
       "prepMinutes": 0,
       "followupMinutes": 10,
       "covered": "Balanced simple chemical equations.",
-      "homework": "Read the next chapter.",
+      "homework": "Write five sentences about your weekend.",
       "loggedAt": "2026-07-25T16:00:00.000Z"
     },
     {
@@ -3541,7 +3539,7 @@
       "prepMinutes": 15,
       "followupMinutes": 0,
       "covered": "Reviewed last week's homework, then started on word problems.",
-      "homework": "Write three sentences about the weekend.",
+      "homework": "Say the six words out loud once a day.",
       "loggedAt": "2026-07-26T02:30:00.000Z"
     },
     {
@@ -3802,6 +3800,118 @@
       "startTime": "15:00",
       "endTime": "16:00",
       "timezone": "Asia/Urumqi"
+    }
+  ],
+  "messages": [
+    {
+      "id": "msg_0010",
+      "pairingId": "pair_16",
+      "authorId": "p_s02",
+      "authorRole": "guardian",
+      "body": "您好，孩子期末考试，想暂停一个月，之后再继续，可以吗？",
+      "sentAt": "2026-06-06T23:10:00.000Z",
+      "deletedAt": null,
+      "deletedBy": null
+    },
+    {
+      "id": "msg_0011",
+      "pairingId": "pair_16",
+      "authorId": "",
+      "authorRole": "admin",
+      "body": "Of course. I have marked the class paused — it stays here and picks straight back up whenever you are ready.",
+      "sentAt": "2026-06-07T15:30:00.000Z",
+      "deletedAt": null,
+      "deletedBy": null
+    },
+    {
+      "id": "msg_0001",
+      "pairingId": "pair_01",
+      "authorId": "p_t01",
+      "authorRole": "tutor",
+      "body": "Hi! Looking forward to Saturday. If there is a word list from school, send a photo and we can start from that.",
+      "sentAt": "2026-06-13T13:05:00.000Z",
+      "deletedAt": null,
+      "deletedBy": null
+    },
+    {
+      "id": "msg_0002",
+      "pairingId": "pair_01",
+      "authorId": "p_s01",
+      "authorRole": "guardian",
+      "body": "老师您好，谢谢您。孩子这周学校有考试，可能会有点累，麻烦您多担待。",
+      "sentAt": "2026-06-13T22:40:00.000Z",
+      "deletedAt": null,
+      "deletedBy": null
+    },
+    {
+      "id": "msg_0003",
+      "pairingId": "pair_01",
+      "authorId": "p_t01",
+      "authorRole": "tutor",
+      "body": "Completely fine. We can take it slower this week and just read together.",
+      "sentAt": "2026-06-14T01:12:00.000Z",
+      "deletedAt": null,
+      "deletedBy": null
+    },
+    {
+      "id": "msg_0004",
+      "pairingId": "pair_01",
+      "authorId": "",
+      "authorRole": "admin",
+      "body": "Thanks both. If exam week runs long, moving a class is never a problem — just say so here.",
+      "sentAt": "2026-06-14T16:00:00.000Z",
+      "deletedAt": null,
+      "deletedBy": null
+    },
+    {
+      "id": "msg_0005",
+      "pairingId": "pair_04",
+      "authorId": "p_s03",
+      "authorRole": "student",
+      "body": "Teacher, I finished the paragraph but I am not sure about the second sentence.",
+      "sentAt": "2026-06-27T11:20:00.000Z",
+      "deletedAt": null,
+      "deletedBy": null
+    },
+    {
+      "id": "msg_0006",
+      "pairingId": "pair_04",
+      "authorId": "p_t03",
+      "authorRole": "tutor",
+      "body": "That is exactly the right thing to be unsure about. Bring it Saturday and we will do it together.",
+      "sentAt": "2026-06-27T15:02:00.000Z",
+      "deletedAt": null,
+      "deletedBy": null
+    },
+    {
+      "id": "msg_0007",
+      "pairingId": "pair_12",
+      "authorId": "p_t08",
+      "authorRole": "tutor",
+      "body": "Reminder that my Saturday evening is your Sunday morning — the link is the same one as always.",
+      "sentAt": "2026-07-04T04:30:00.000Z",
+      "deletedAt": null,
+      "deletedBy": null
+    },
+    {
+      "id": "msg_0008",
+      "pairingId": "pair_12",
+      "authorId": "p_s10",
+      "authorRole": "guardian",
+      "body": "明白了，谢谢！时差有点绕，这样说清楚多了。",
+      "sentAt": "2026-07-04T13:15:00.000Z",
+      "deletedAt": null,
+      "deletedBy": null
+    },
+    {
+      "id": "msg_0009",
+      "pairingId": "pair_15",
+      "authorId": "",
+      "authorRole": "admin",
+      "body": "Hi both — no class logged for a few weeks, so just checking in. Nothing is wrong and nothing is owed; if the timing has stopped working we can find a different slot.",
+      "sentAt": "2026-07-20T17:00:00.000Z",
+      "deletedAt": null,
+      "deletedBy": null
     }
   ]
 }

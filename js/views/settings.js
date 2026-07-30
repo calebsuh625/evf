@@ -8,17 +8,24 @@ export function render(container, { store }) {
   container.append(
     viewHead(t('settings.title'), t('settings.lede')),
 
-    // Read-only for now: these values already drive the dashboard clocks and
-    // every hours calculation, so showing them proves the store round-trips.
+    // Read-only: these values already drive the dashboard clocks and every
+    // hours calculation, so showing them proves the store round-trips.
     el('dl', { class: 'card kv', style: 'margin-bottom:16px' },
       row(t('home.zone.here'), data.program.adminTimeZone),
       row(t('home.zone.students'), data.program.studentTimeZone),
-      row('Default session length', `${data.program.defaultSessionMinutes} min`)
+      row(t('settings.sessionLength'), `${data.program.defaultSessionMinutes} min`)
+    ),
+
+    // The admin zone is a constant, not a preference — see PROGRAM_TIME_ZONE
+    // in store.js. Saying why, here, stops it being read as a bug.
+    el('aside', { class: 'notice', role: 'note' },
+      el('p', { class: 'notice__title', text: t('settings.zoneFixedTitle') }),
+      el('p', { class: 'small', text: t('settings.zoneFixed') })
     ),
 
     placeholder({
       willDo: [
-        'Editable program name, admin time zone, student time zone, and default session length.',
+        'Editable program name and default class length.',
         'Language preference, which is already persisted separately from program data.',
         'Terms and date ranges, so hours can be reported per semester.'
       ]

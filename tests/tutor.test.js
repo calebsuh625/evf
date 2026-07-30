@@ -37,7 +37,7 @@ function fixture(overrides = {}) {
     // run the whole v0 chain over a shape that is already current.
     version: 3,
     program: {
-      name: 'Weekend Tutoring',
+      name: 'Weekend English',
       adminTimeZone: LA,
       studentTimeZone: SH,
       defaultSessionMinutes: 60,
@@ -49,8 +49,8 @@ function fixture(overrides = {}) {
     people: [
       { id: 't1', role: 'tutor', name: 'Avery Alpha', preferredName: 'Avery', timezone: LA, active: true, acceptingStudents: true, meetingLink: 'https://meet.example.org/demo' },
       { id: 't2', role: 'tutor', name: 'Blake Beta', preferredName: 'Blake', timezone: LA, active: true, acceptingStudents: false },
-      { id: 's1', role: 'student', name: 'Ming Nu', preferredName: 'Ming', timezone: SH, active: true, englishLevel: 'beginner', goals: ['algebra'], interests: ['chess'] },
-      { id: 's2', role: 'student', name: 'Yara Xi', preferredName: 'Yara', timezone: SH, active: true, englishLevel: 'intermediate', goals: ['physics'], interests: [] }
+      { id: 's1', role: 'student', name: 'Ming Nu', preferredName: 'Ming', timezone: SH, active: true, englishLevel: 'beginner', goals: ['reading'], interests: ['chess'] },
+      { id: 's2', role: 'student', name: 'Yara Xi', preferredName: 'Yara', timezone: SH, active: true, englishLevel: 'intermediate', goals: ['listening'], interests: [] }
     ],
     pairings: [
       { id: 'p1', tutorId: 't1', studentId: 's1', status: 'active', startedAt: '2026-05-01T00:00:00.000Z', endedAt: null, notes: '' },
