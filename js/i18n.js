@@ -17,7 +17,7 @@ export const LOCALES = Object.freeze({ en: 'en-US', zh: 'zh-CN' });
 
 const STRINGS = {
   en: {
-    'app.title': 'Weekend English',
+    'app.title': 'PeerBridges 2.0',
     'lang.toggle': '中文',
 
     'nav.home': 'Home',
@@ -446,7 +446,7 @@ const STRINGS = {
     'busy.importing': 'Reading the file…',
     'busy.exporting': 'Preparing…',
     'busy.working': 'Working…',
-    'brand.home': 'Weekend English — home',
+    'brand.home': 'PeerBridges 2.0 — home',
     'lang.switch': 'Switch to Chinese',
     'tutor.log.lastTime': 'Last time: {text}',
     'tutor.log.coveredHint': 'One line is plenty. This is what you will read before the next class.',
@@ -519,7 +519,7 @@ const STRINGS = {
   },
 
   zh: {
-    'app.title': '周末英语',
+    'app.title': 'PeerBridges 2.0',
     'lang.toggle': 'English',
 
     'nav.home': '首页',
@@ -948,7 +948,7 @@ const STRINGS = {
     'busy.importing': '正在读取文件…',
     'busy.exporting': '正在准备…',
     'busy.working': '处理中…',
-    'brand.home': '周末英语 — 首页',
+    'brand.home': 'PeerBridges 2.0 — 首页',
     'lang.switch': '切换为英文',
     'tutor.log.lastTime': '上次：{text}',
     'tutor.log.coveredHint': '一行就够。下次上课前你会先看到这句话。',

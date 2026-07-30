@@ -109,7 +109,7 @@ export function emptyProgram() {
     version: SCHEMA_VERSION,
     exportedAt: null,
     program: {
-      name: 'Weekend English',
+      name: 'PeerBridges 2.0',
       adminTimeZone: PROGRAM_TIME_ZONE,
       studentTimeZone: STUDENT_TIME_ZONE,
       defaultSessionMinutes: 60,
@@ -127,6 +127,14 @@ export function emptyProgram() {
   };
 }
 
+/**
+ * Only reachable from the two legacy migrations below, which is why its
+ * fallback is still Eastern: those are shipped and must not be edited.
+ *
+ * Nothing current calls it. A new program and a newly added tutor both get
+ * `PROGRAM_TIME_ZONE` — the club tutors out of California, and the clock must
+ * not depend on what machine somebody happened to open the app on.
+ */
 export function guessTimeZone() {
   try {
     return Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/New_York';

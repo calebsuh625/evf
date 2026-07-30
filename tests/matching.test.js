@@ -631,7 +631,7 @@ describe('matchingReport', () => {
   function program(overrides = {}) {
     return {
       version: 4,
-      program: { name: 'Weekend English', studentTimeZone: SH, terms: [] },
+      program: { name: 'PeerBridges 2.0', studentTimeZone: SH, terms: [] },
       people: [
         tutor({ id: 'tut_a', maxStudents: 2 }),
         tutor({ id: 'tut_latin', subjects: ['latin'] }),

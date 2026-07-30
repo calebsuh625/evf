@@ -4,8 +4,11 @@ Guidance for Claude Code when working in this repository.
 
 ## What this is
 
-A volunteer **English** tutoring coordinator. US-based high school tutors teach
-English to students in mainland China, one-on-one, on weekends.
+A volunteer **English** tutoring coordinator. **California** high school tutors
+teach English to students in mainland China, one-on-one, on weekends.
+
+The program is called **PeerBridges 2.0**. Every tutor is on Pacific time and
+every student on Beijing time; those are the only two clocks in the program.
 
 **The program teaches English and only English.** A tutor's `subjects` and a
 student's `goals` both draw on `ENGLISH_SKILLS` in `store.js` — conversation,
@@ -687,7 +690,12 @@ re-import.
 
 ## Privacy
 
-`data/sample.json` is synthetic and stays synthetic. Every name in it is a
+`data/sample.json` is synthetic and stays synthetic: one coordinator, two tutors
+and five students, paired two and three. It is small on purpose — a demo you can
+hold in your head beats one with thirty invented people — so it no longer
+demonstrates a student nobody can teach or two students competing for one tutor.
+Both need a bigger roster; the generator that builds it is not committed, so
+regenerating means writing one. Every name in it is a
 placeholder. Real tutor and student data lives only in an export the coordinator
 keeps privately, and must never be committed, pasted into an issue, or included
 in a test fixture.

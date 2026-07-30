@@ -1,7 +1,7 @@
-# Weekend English
+# PeerBridges 2.0
 
-A coordinator for a volunteer English tutoring program: US high school students
-teach English to students in mainland China, one-on-one, on weekends.
+A coordinator for a volunteer English tutoring program: California high school
+students teach English to students in mainland China, one-on-one, on weekends.
 
 **[Live demo → calebsuh625.github.io/evf](https://calebsuh625.github.io/evf/)**
 
@@ -62,9 +62,15 @@ before agreeing to add any of them.
 
 ## Never commit real data
 
-`data/sample.json` is entirely invented and stays that way. Every name pairs an
-ordinary given name with a Greek-letter surname so it cannot be mistaken for a
-real person, and every address uses the IANA-reserved `example.org` domain.
+`data/sample.json` is entirely invented and stays that way: **one coordinator,
+two tutors and five students**, split two students to one tutor and three to the
+other. Every name pairs an ordinary given name with a Greek-letter surname so it
+cannot be mistaken for a real person, and every address uses the IANA-reserved
+`example.org` domain.
+
+The coordinator has no roster row — they are a role you select in the picker,
+not a person record — so the demo has exactly one and they are a member of every
+class chat.
 
 **Real tutor and student data must never enter this repository.** Not in
 `data/`, not in a test fixture, not pasted into an issue or a pull request, not
@@ -190,15 +196,16 @@ Two WebKit-specific traps are avoided deliberately and should stay avoided:
 
 The hardest part of the program, and the reason `js/time.js` exists.
 
-A tutor in Ohio free "Saturday 9pm" and a student in Chengdu free "Sunday 9am"
-are describing the same hour. A tutor's Saturday morning is a Saturday *night*
-in China. And when US clocks move for daylight saving, every pairing shifts by
-an hour while China — which has one time zone and no DST — does not move at all.
+A tutor in California free "Saturday 9pm" and a student in Chengdu free "Sunday
+noon" are describing the same hour — and not even the same day. A tutor's
+Saturday morning is a Saturday *night* in China. And when California clocks move
+for daylight saving, every pairing shifts by an hour while China — which has one
+time zone and no DST — does not move at all.
 
 So the app stores two different kinds of time and never confuses them:
 
 - **Instants** — a session that happened. Always an ISO 8601 UTC string.
-- **Recurring availability** — "Saturdays 9–11am, Eastern". Stored as a weekday,
+- **Recurring availability** — "Saturdays 9–11am, Pacific". Stored as a weekday,
   a wall-clock range, and a zone, then resolved into real instants against a
   specific week. Storing these as UTC would silently break twice a year.
 

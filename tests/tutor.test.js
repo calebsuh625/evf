@@ -37,7 +37,7 @@ function fixture(overrides = {}) {
     // run the whole v0 chain over a shape that is already current.
     version: 3,
     program: {
-      name: 'Weekend English',
+      name: 'PeerBridges 2.0',
       adminTimeZone: LA,
       studentTimeZone: SH,
       defaultSessionMinutes: 60,

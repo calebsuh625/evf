@@ -1,6 +1,6 @@
 # Handover
 
-For whoever is running the English tutoring program next.
+For whoever is running PeerBridges next.
 
 You do not need to be able to code to run this. You need to know four things:
 where the data file lives, how to add and remove people, how to export, and
@@ -31,7 +31,7 @@ Somewhere that is not one person's laptop:
 - the club's shared Google Drive or OneDrive folder, **and**
 - your own copy, so it survives losing access to the shared folder.
 
-Name them by date — `weekend-english-2026-07-30.json` — and keep the old ones.
+Name them by date — `peerbridges-2-0-2026-07-30.json` — and keep the old ones.
 They are small (about 100 KB) and an old backup has saved more than one program.
 
 > **Write down here where yours actually lives, and keep this line updated:**

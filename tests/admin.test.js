@@ -38,7 +38,7 @@ function fixture(overrides = {}) {
   return {
     version: 4,
     program: {
-      name: 'Weekend English',
+      name: 'PeerBridges 2.0',
       adminTimeZone: NY,
       studentTimeZone: SH,
       terms: [
