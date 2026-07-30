@@ -1,0 +1,82 @@
+/* views.css — styles specific to individual screens. */
+
+/* Boot guard (file:// help screen) */
+
+.boot-help {
+  max-width: 60ch;
+  margin: var(--sp-6) auto;
+  padding: var(--sp-5);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--warn);
+  border-radius: var(--r-lg);
+}
+.boot-help__note { font-size: .875rem; color: var(--ink-faint); }
+
+/* Dashboard */
+
+.dash-hero {
+  padding: var(--sp-5);
+  margin-bottom: var(--sp-5);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow);
+}
+.dash-hero h1 { margin-bottom: var(--sp-2); }
+.dash-hero p { max-width: 60ch; color: var(--ink-soft); }
+.dash-hero__actions { margin-top: var(--sp-4); }
+
+.clocks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-5);
+  padding: var(--sp-4);
+  background: var(--paper-3);
+  border-radius: var(--r-md);
+}
+.clock__zone {
+  font-size: .75rem;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.clock__time {
+  font-size: 1.25rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.clock__delta { font-size: .8125rem; color: var(--ink-soft); }
+
+/* Data screen */
+
+.data-panel + .data-panel { margin-top: var(--sp-4); }
+
+.data-panel__body { display: flex; flex-direction: column; gap: var(--sp-3); }
+
+.json-peek {
+  max-height: 260px;
+  overflow: auto;
+  font-size: .8125rem;
+  line-height: 1.45;
+  background: var(--paper-2);
+  border: 1px solid var(--line);
+}
+
+.kv {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--sp-1) var(--sp-4);
+  margin: 0;
+  font-size: .9375rem;
+}
+.kv dt { color: var(--ink-soft); }
+.kv dd { margin: 0; font-variant-numeric: tabular-nums; }
+
+.danger-zone {
+  border-color: #e3bdbd;
+}
+@media (prefers-color-scheme: dark) {
+  .danger-zone { border-color: #4d2a2a; }
+}

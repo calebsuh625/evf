@@ -1,0 +1,256 @@
+{
+  "_notice": "SYNTHETIC DEMO DATA. Every name, school, and contact here is invented for demonstration. Never replace this file with real tutor or student information — real data lives only in an export the coordinator keeps privately.",
+  "schemaVersion": 1,
+  "exportedAt": "2026-03-08T15:00:00.000Z",
+  "program": {
+    "name": "Weekend Tutoring",
+    "adminTimeZone": "America/New_York",
+    "studentTimeZone": "Asia/Shanghai",
+    "defaultSessionMinutes": 60,
+    "terms": [
+      { "id": "term_spring26", "label": "Spring 2026", "startsAt": "2026-02-01T05:00:00.000Z", "endsAt": "2026-06-15T04:00:00.000Z" }
+    ]
+  },
+  "tutors": [
+    {
+      "id": "tut_aspen",
+      "displayName": "Sample Tutor A",
+      "timeZone": "America/New_York",
+      "gradeLevel": 11,
+      "subjects": ["algebra", "geometry", "english reading"],
+      "languages": ["english", "mandarin"],
+      "availability": [
+        { "day": 6, "start": "08:00", "end": "11:00", "tz": "America/New_York" },
+        { "day": 0, "start": "09:00", "end": "12:00", "tz": "America/New_York" }
+      ],
+      "active": true,
+      "notes": "Heritage Mandarin speaker; comfortable explaining math vocabulary in both languages.",
+      "createdAt": "2026-02-03T22:14:00.000Z"
+    },
+    {
+      "id": "tut_brook",
+      "displayName": "Sample Tutor B",
+      "timeZone": "America/Chicago",
+      "gradeLevel": 12,
+      "subjects": ["english conversation", "english writing"],
+      "languages": ["english"],
+      "availability": [
+        { "day": 6, "start": "19:00", "end": "22:00", "tz": "America/Chicago" }
+      ],
+      "active": true,
+      "notes": "Prefers conversation practice over grammar drilling.",
+      "createdAt": "2026-02-04T01:02:00.000Z"
+    },
+    {
+      "id": "tut_cedar",
+      "displayName": "Sample Tutor C",
+      "timeZone": "America/Los_Angeles",
+      "gradeLevel": 10,
+      "subjects": ["algebra", "physics"],
+      "languages": ["english"],
+      "availability": [
+        { "day": 6, "start": "17:00", "end": "20:00", "tz": "America/Los_Angeles" },
+        { "day": 0, "start": "17:00", "end": "19:00", "tz": "America/Los_Angeles" }
+      ],
+      "active": true,
+      "notes": "",
+      "createdAt": "2026-02-06T18:40:00.000Z"
+    },
+    {
+      "id": "tut_dune",
+      "displayName": "Sample Tutor D",
+      "timeZone": "America/Denver",
+      "gradeLevel": 11,
+      "subjects": ["english reading", "biology"],
+      "languages": ["english"],
+      "availability": [
+        { "day": 0, "start": "07:00", "end": "09:00", "tz": "America/Denver" }
+      ],
+      "active": true,
+      "notes": "Joined mid-term; one student to start.",
+      "createdAt": "2026-02-20T15:11:00.000Z"
+    },
+    {
+      "id": "tut_elm",
+      "displayName": "Sample Tutor E",
+      "timeZone": "America/New_York",
+      "gradeLevel": 12,
+      "subjects": ["chemistry", "algebra"],
+      "languages": ["english"],
+      "availability": [
+        { "day": 5, "start": "20:00", "end": "22:00", "tz": "America/New_York" }
+      ],
+      "active": false,
+      "notes": "Paused for exam season. Not a problem, not a strike; will return.",
+      "createdAt": "2026-02-03T23:50:00.000Z"
+    }
+  ],
+  "students": [
+    {
+      "id": "stu_101",
+      "displayName": "Sample Student 1",
+      "timeZone": "Asia/Shanghai",
+      "gradeLevel": 8,
+      "subjects": ["algebra", "english reading"],
+      "languages": ["mandarin", "english"],
+      "availability": [
+        { "day": 0, "start": "20:00", "end": "22:00", "tz": "Asia/Shanghai" },
+        { "day": 6, "start": "20:00", "end": "22:00", "tz": "Asia/Shanghai" }
+      ],
+      "englishLevel": "beginner",
+      "active": true,
+      "guardianContact": null,
+      "notes": "",
+      "createdAt": "2026-02-05T12:00:00.000Z"
+    },
+    {
+      "id": "stu_102",
+      "displayName": "Sample Student 2",
+      "timeZone": "Asia/Shanghai",
+      "gradeLevel": 9,
+      "subjects": ["english conversation"],
+      "languages": ["mandarin", "english"],
+      "availability": [
+        { "day": 0, "start": "09:00", "end": "11:30", "tz": "Asia/Shanghai" }
+      ],
+      "englishLevel": "intermediate",
+      "active": true,
+      "guardianContact": null,
+      "notes": "",
+      "createdAt": "2026-02-05T12:04:00.000Z"
+    },
+    {
+      "id": "stu_103",
+      "displayName": "Sample Student 3",
+      "timeZone": "Asia/Shanghai",
+      "gradeLevel": 10,
+      "subjects": ["algebra", "physics"],
+      "languages": ["mandarin"],
+      "availability": [
+        { "day": 0, "start": "08:00", "end": "11:00", "tz": "Asia/Shanghai" }
+      ],
+      "englishLevel": "beginner",
+      "active": true,
+      "guardianContact": null,
+      "notes": "Prefers a tutor who can fall back to Mandarin for new terms.",
+      "createdAt": "2026-02-07T11:30:00.000Z"
+    },
+    {
+      "id": "stu_104",
+      "displayName": "Sample Student 4",
+      "timeZone": "Asia/Shanghai",
+      "gradeLevel": 7,
+      "subjects": ["english reading"],
+      "languages": ["mandarin"],
+      "availability": [
+        { "day": 0, "start": "21:00", "end": "22:30", "tz": "Asia/Shanghai" }
+      ],
+      "englishLevel": "beginner",
+      "active": true,
+      "guardianContact": null,
+      "notes": "",
+      "createdAt": "2026-02-21T09:00:00.000Z"
+    },
+    {
+      "id": "stu_105",
+      "displayName": "Sample Student 5",
+      "timeZone": "Asia/Urumqi",
+      "gradeLevel": 9,
+      "subjects": ["chemistry"],
+      "languages": ["mandarin"],
+      "availability": [
+        { "day": 6, "start": "10:00", "end": "12:00", "tz": "Asia/Urumqi" }
+      ],
+      "englishLevel": "intermediate",
+      "active": true,
+      "guardianContact": null,
+      "notes": "Western China: keeps local daylight hours even though the clock reads Beijing time. Unmatched so far — a good test of the diagnose-why path.",
+      "createdAt": "2026-02-22T04:00:00.000Z"
+    },
+    {
+      "id": "stu_106",
+      "displayName": "Sample Student 6",
+      "timeZone": "Asia/Shanghai",
+      "gradeLevel": 8,
+      "subjects": [],
+      "languages": ["mandarin"],
+      "availability": [
+        { "day": 0, "start": "09:00", "end": "12:00", "tz": "Asia/Shanghai" }
+      ],
+      "englishLevel": "beginner",
+      "active": true,
+      "guardianContact": null,
+      "notes": "Signed up with no subject preference stated. This is allowed (principle 5).",
+      "createdAt": "2026-03-01T13:20:00.000Z"
+    }
+  ],
+  "matches": [
+    {
+      "id": "mat_001",
+      "tutorId": "tut_aspen",
+      "studentId": "stu_101",
+      "subject": "algebra",
+      "status": "active",
+      "startedAt": "2026-02-08T00:00:00.000Z",
+      "endedAt": null,
+      "createdAt": "2026-02-07T20:00:00.000Z"
+    },
+    {
+      "id": "mat_002",
+      "tutorId": "tut_brook",
+      "studentId": "stu_102",
+      "subject": "english conversation",
+      "status": "active",
+      "startedAt": "2026-02-08T00:00:00.000Z",
+      "endedAt": null,
+      "createdAt": "2026-02-07T20:05:00.000Z"
+    },
+    {
+      "id": "mat_003",
+      "tutorId": "tut_cedar",
+      "studentId": "stu_103",
+      "subject": "algebra",
+      "status": "active",
+      "startedAt": "2026-02-15T00:00:00.000Z",
+      "endedAt": null,
+      "createdAt": "2026-02-14T19:30:00.000Z"
+    },
+    {
+      "id": "mat_004",
+      "tutorId": "tut_dune",
+      "studentId": "stu_104",
+      "subject": "english reading",
+      "status": "active",
+      "startedAt": "2026-02-22T00:00:00.000Z",
+      "endedAt": null,
+      "createdAt": "2026-02-21T16:00:00.000Z"
+    },
+    {
+      "id": "mat_005",
+      "tutorId": "tut_aspen",
+      "studentId": "stu_106",
+      "subject": "english reading",
+      "status": "ended",
+      "startedAt": "2026-02-08T00:00:00.000Z",
+      "endedAt": "2026-02-28T00:00:00.000Z",
+      "createdAt": "2026-02-07T20:10:00.000Z"
+    }
+  ],
+  "sessions": [
+    { "id": "ses_0001", "matchId": "mat_001", "tutorId": "tut_aspen", "studentId": "stu_101", "subject": "algebra", "startsAt": "2026-02-08T13:00:00.000Z", "durationMinutes": 60, "status": "held", "note": "Started on solving one-step equations.", "loggedAt": "2026-02-08T14:05:00.000Z" },
+    { "id": "ses_0002", "matchId": "mat_002", "tutorId": "tut_brook", "studentId": "stu_102", "subject": "english conversation", "startsAt": "2026-02-08T01:00:00.000Z", "durationMinutes": 45, "status": "held", "note": "", "loggedAt": "2026-02-08T02:00:00.000Z" },
+    { "id": "ses_0003", "matchId": "mat_001", "tutorId": "tut_aspen", "studentId": "stu_101", "subject": "algebra", "startsAt": "2026-02-15T13:00:00.000Z", "durationMinutes": 60, "status": "held", "note": "Two-step equations. Went well.", "loggedAt": "2026-02-15T14:10:00.000Z" },
+    { "id": "ses_0004", "matchId": "mat_002", "tutorId": "tut_brook", "studentId": "stu_102", "subject": "english conversation", "startsAt": "2026-02-15T01:00:00.000Z", "durationMinutes": 60, "status": "held", "note": "", "loggedAt": "2026-02-15T02:20:00.000Z" },
+    { "id": "ses_0005", "matchId": "mat_003", "tutorId": "tut_cedar", "studentId": "stu_103", "subject": "algebra", "startsAt": "2026-02-15T01:00:00.000Z", "durationMinutes": 60, "status": "held", "note": "First session, mostly getting set up.", "loggedAt": "2026-02-15T02:05:00.000Z" },
+    { "id": "ses_0006", "matchId": "mat_001", "tutorId": "tut_aspen", "studentId": "stu_101", "subject": "algebra", "startsAt": "2026-02-22T13:00:00.000Z", "durationMinutes": 0, "status": "canceled", "note": "Family travel. Rescheduled to the following week.", "loggedAt": "2026-02-22T13:05:00.000Z" },
+    { "id": "ses_0007", "matchId": "mat_003", "tutorId": "tut_cedar", "studentId": "stu_103", "subject": "algebra", "startsAt": "2026-02-22T01:00:00.000Z", "durationMinutes": 75, "status": "held", "note": "Ran long; student wanted to finish the problem set.", "loggedAt": "2026-02-22T02:30:00.000Z" },
+    { "id": "ses_0008", "matchId": "mat_002", "tutorId": "tut_brook", "studentId": "stu_102", "subject": "english conversation", "startsAt": "2026-02-22T01:00:00.000Z", "durationMinutes": 60, "status": "held", "note": "", "loggedAt": "2026-02-22T02:10:00.000Z" },
+    { "id": "ses_0009", "matchId": "mat_004", "tutorId": "tut_dune", "studentId": "stu_104", "subject": "english reading", "startsAt": "2026-02-22T14:00:00.000Z", "durationMinutes": 45, "status": "held", "note": "Read a short story together.", "loggedAt": "2026-02-22T15:00:00.000Z" },
+    { "id": "ses_0010", "matchId": "mat_001", "tutorId": "tut_aspen", "studentId": "stu_101", "subject": "algebra", "startsAt": "2026-03-01T13:00:00.000Z", "durationMinutes": 90, "status": "held", "note": "Caught up on the missed week.", "loggedAt": "2026-03-01T14:40:00.000Z" },
+    { "id": "ses_0011", "matchId": "mat_002", "tutorId": "tut_brook", "studentId": "stu_102", "subject": "english conversation", "startsAt": "2026-03-01T02:00:00.000Z", "durationMinutes": 60, "status": "held", "note": "Note the clock change: this is the first session after US daylight saving starts.", "loggedAt": "2026-03-01T03:05:00.000Z" },
+    { "id": "ses_0012", "matchId": "mat_003", "tutorId": "tut_cedar", "studentId": "stu_103", "subject": "algebra", "startsAt": "2026-03-01T01:00:00.000Z", "durationMinutes": 60, "status": "held", "note": "", "loggedAt": "2026-03-01T02:15:00.000Z" },
+    { "id": "ses_0013", "matchId": "mat_004", "tutorId": "tut_dune", "studentId": "stu_104", "subject": "english reading", "startsAt": "2026-03-01T14:00:00.000Z", "durationMinutes": 45, "status": "held", "note": "", "loggedAt": "2026-03-01T15:00:00.000Z" },
+    { "id": "ses_0014", "matchId": "mat_001", "tutorId": "tut_aspen", "studentId": "stu_101", "subject": "algebra", "startsAt": "2026-03-08T13:00:00.000Z", "durationMinutes": 60, "status": "held", "note": "", "loggedAt": "2026-03-08T14:05:00.000Z" },
+    { "id": "ses_0015", "matchId": "mat_004", "tutorId": "tut_dune", "studentId": "stu_104", "subject": "english reading", "startsAt": "2026-03-08T14:00:00.000Z", "durationMinutes": 60, "status": "held", "note": "", "loggedAt": "2026-03-08T15:05:00.000Z" }
+  ]
+}

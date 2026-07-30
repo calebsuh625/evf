@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tests · Weekend Tutoring</title>
+<link rel="stylesheet" href="../css/base.css">
+<style>
+  body { padding: 24px 16px 64px; background: var(--paper-2); }
+  main { max-width: 860px; margin: 0 auto; }
+  .summary {
+    position: sticky; top: 0; z-index: 2;
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: 16px;
+    margin-bottom: 24px; padding: 16px;
+    background: var(--paper); border: 1px solid var(--line);
+    border-radius: 14px;
+  }
+  .summary strong { font-size: 1.5rem; font-variant-numeric: tabular-nums; }
+  .summary[data-state="pass"] { border-left: 4px solid var(--good); }
+  .summary[data-state="fail"] { border-left: 4px solid #a33; }
+  .summary[data-state="running"] { border-left: 4px solid var(--accent); }
+
+  .suite { margin-bottom: 20px; }
+  .suite > h2 {
+    margin: 0 0 8px; padding-bottom: 6px;
+    font-size: .8125rem; font-weight: 600;
+    letter-spacing: .06em; text-transform: uppercase;
+    color: var(--ink-faint); border-bottom: 1px solid var(--line);
+  }
+  .case { display: flex; gap: 10px; padding: 5px 0; font-size: .9375rem; }
+  .case__mark { flex: none; width: 1.2em; font-weight: 700; text-align: center; }
+  .case--pass .case__mark { color: var(--good); }
+  .case--fail .case__mark { color: #c33; }
+  .case--fail { color: #c33; }
+  .case__body { min-width: 0; }
+  .case pre {
+    margin: 6px 0 2px; padding: 10px;
+    font-size: .8125rem; color: var(--ink);
+    background: var(--paper-3); white-space: pre-wrap;
+  }
+  .note { margin-bottom: 20px; font-size: .875rem; color: var(--ink-faint); }
+  .note code { font-size: .95em; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Unit tests</h1>
+  <p class="note">
+    Pure-logic tests for <code>time.js</code>, <code>matching.js</code>,
+    <code>hours.js</code>, and the pure half of <code>store.js</code>.
+    Must be served over HTTP — ES modules do not load from <code>file://</code>.
+    &nbsp;<a href="../index.html">Back to the app</a>
+  </p>
+
+  <div class="summary" id="summary" data-state="running">
+    <strong id="count">running…</strong>
+    <span id="detail" class="muted"></span>
+  </div>
+
+  <div id="results"></div>
+</main>
+
+<script type="module">
+import { run } from './runner.js';
+
+// Importing a test file registers its suites. Order here is display order.
+await import('./time.test.js');
+await import('./matching.test.js');
+await import('./hours.test.js');
+await import('./store.test.js');
+
+const results = document.getElementById('results');
+const summary = document.getElementById('summary');
+const count = document.getElementById('count');
+const detail = document.getElementById('detail');
+
+let suiteNode = null;
+
+function el(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text != null) node.textContent = text;
+  return node;
+}
+
+const summaryFor = await run((event) => {
+  if (event.type === 'suite') {
+    suiteNode = el('section', 'suite');
+    suiteNode.append(el('h2', null, event.name));
+    results.append(suiteNode);
+    return;
+  }
+
+  if (event.type === 'pass' || event.type === 'fail') {
+    const row = el('div', `case case--${event.type}`);
+    row.append(el('span', 'case__mark', event.type === 'pass' ? '✓' : '✕'));
+
+    const body = el('div', 'case__body');
+    body.append(el('span', null, event.name));
+    if (event.type === 'fail') body.append(el('pre', null, event.error));
+    row.append(body);
+
+    suiteNode.append(row);
+    return;
+  }
+
+  if (event.type === 'done') {
+    const state = event.failed === 0 ? 'pass' : 'fail';
+    summary.dataset.state = state;
+    count.textContent = event.failed === 0
+      ? `${event.passed} passed`
+      : `${event.failed} failed, ${event.passed} passed`;
+    detail.textContent = `${event.total} tests`;
+    document.title = `${event.failed === 0 ? 'PASS' : 'FAIL'} · ${event.total} tests`;
+  }
+});
+
+// A handle for headless checking: read window.__TEST_RESULT after load.
+window.__TEST_RESULT = summaryFor;
+</script>
+</body>
+</html>
