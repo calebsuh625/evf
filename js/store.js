@@ -1,20 +1,72 @@
 /**
- * store.js — the data layer.
+ * store.js — the data layer and the data model.
  *
  * The exported JSON file is the source of truth. localStorage is a
  * convenience cache so a coordinator does not lose a half-finished session
  * log when a phone browser evicts the tab. If localStorage vanished
  * tomorrow, re-importing the export would lose nothing that mattered.
  *
- * Every shape change to the data model gets a MIGRATIONS entry and a
- * SCHEMA_VERSION bump. Old exports must keep opening: a coordinator's
- * backup from last spring is the program's memory.
+ * ── The document ─────────────────────────────────────────────────────
+ *
+ *   {
+ *     version: 2,
+ *     program:      { name, adminTimeZone, studentTimeZone, ... },
+ *     people:       [{ id, role, name, preferredName, email, wechat,
+ *                      timezone, locale, active, ...roleFields }],
+ *     pairings:     [{ id, tutorId, studentId, status, startedAt, endedAt, notes }],
+ *     sessions:     [{ id, pairingId, scheduledAt, occurred, durationMinutes,
+ *                      prepMinutes, followupMinutes, covered, homework, loggedAt }],
+ *     availability: [{ personId, weekday, startTime, endTime, timezone }]
+ *   }
+ *
+ * Tutors and students are one table with a `role` discriminator. They share
+ * most of their fields, every screen that lists "people" wants both, and a
+ * tutor who later becomes a student coordinator should not need a new row.
+ *
+ * Sessions hang off `pairingId`, not off a tutor and a student directly. The
+ * pairing is the thing that exists over time; a session is one instance of
+ * it. Resolving a session to its people goes through the pairing, which is
+ * why hours.js takes the pairings table as an argument.
+ *
+ * Availability is its own table rather than nested in a person. It is
+ * queried by time far more than it is read per-person, rows get added and
+ * removed independently of the person, and a nested array is the shape that
+ * makes bulk CSV import awkward.
+ *
+ * ── Time ─────────────────────────────────────────────────────────────
+ *
+ * Instants (`scheduledAt`, `loggedAt`, `startedAt`, `endedAt`) are ISO 8601
+ * UTC strings, always. Recurring availability is a weekday plus a wall-clock
+ * range plus a zone, and must NOT be normalised to UTC — see js/time.js.
+ *
+ * ── Changing the model ───────────────────────────────────────────────
+ *
+ * Add a MIGRATIONS entry keyed by the version you are migrating FROM, bump
+ * SCHEMA_VERSION, and add a fixture test. Never edit a shipped migration.
+ * Old exports must keep opening: a coordinator's backup from last spring is
+ * the program's memory.
  */
 
-export const SCHEMA_VERSION = 1;
+import {
+  parseCsvToObjects,
+  objectsToCsv,
+  parseList,
+  formatList,
+  parseBoolean,
+  parseNumber
+} from './csv.js';
+import { isValidTimeZone, parseHhMm } from './time.js';
+
+export const SCHEMA_VERSION = 2;
 
 const STORAGE_KEY = 'evf.program.v1';
 const LANG_KEY = 'evf.lang';
+
+export const ROLES = Object.freeze(['tutor', 'student']);
+export const PAIRING_STATUSES = Object.freeze(['active', 'paused', 'ended']);
+
+/** English levels, coarsest first. Tutors say which they are comfortable with. */
+export const ENGLISH_LEVELS = Object.freeze(['beginner', 'elementary', 'intermediate', 'advanced']);
 
 /* ------------------------------------------------------------------ *
  * Shape
@@ -22,7 +74,7 @@ const LANG_KEY = 'evf.lang';
 
 export function emptyProgram() {
   return {
-    schemaVersion: SCHEMA_VERSION,
+    version: SCHEMA_VERSION,
     exportedAt: null,
     program: {
       name: 'Weekend Tutoring',
@@ -31,10 +83,10 @@ export function emptyProgram() {
       defaultSessionMinutes: 60,
       terms: []
     },
-    tutors: [],
-    students: [],
-    matches: [],
-    sessions: []
+    people: [],
+    pairings: [],
+    sessions: [],
+    availability: []
   };
 }
 
@@ -46,30 +98,116 @@ export function guessTimeZone() {
   }
 }
 
+/** A tutor with every field present, so forms and imports agree on the shape. */
+export function newTutor(fields = {}) {
+  return {
+    id: fields.id ?? newId('tut'),
+    role: 'tutor',
+    name: '',
+    preferredName: '',
+    email: '',
+    wechat: '',
+    timezone: guessTimeZone(),
+    locale: 'en',
+    active: true,
+    school: '',
+    grade: null,
+    subjects: [],
+    levelsComfortable: [],
+    maxStudents: 2,
+    bio: '',
+    meetingLink: '',
+    createdAt: new Date().toISOString(),
+    ...fields,
+    role: 'tutor'
+  };
+}
+
+/**
+ * A student with every field present.
+ *
+ * Only `name` is ever meaningfully required, and even that accepts whatever
+ * the student wants to be called. Principle 5: students and guardians never
+ * have required data entry, so every guardian field defaults to empty and
+ * nothing downstream may assume otherwise.
+ */
+export function newStudent(fields = {}) {
+  return {
+    id: fields.id ?? newId('stu'),
+    role: 'student',
+    name: '',
+    preferredName: '',
+    email: '',
+    wechat: '',
+    timezone: 'Asia/Shanghai',
+    locale: 'zh',
+    active: true,
+    grade: null,
+    englishLevel: 'beginner',
+    goals: [],
+    interests: [],
+    guardianName: '',
+    guardianWechat: '',
+    guardianEmail: '',
+    createdAt: new Date().toISOString(),
+    ...fields,
+    role: 'student'
+  };
+}
+
+export function newPairing(fields = {}) {
+  return {
+    id: fields.id ?? newId('pair'),
+    tutorId: '',
+    studentId: '',
+    status: 'active',
+    startedAt: new Date().toISOString(),
+    endedAt: null,
+    notes: '',
+    ...fields
+  };
+}
+
+export function newSession(fields = {}) {
+  return {
+    id: fields.id ?? newId('ses'),
+    pairingId: '',
+    scheduledAt: new Date().toISOString(),
+    occurred: true,
+    durationMinutes: 60,
+    prepMinutes: 0,
+    followupMinutes: 0,
+    covered: '',
+    homework: '',
+    loggedAt: new Date().toISOString(),
+    ...fields
+  };
+}
+
 /* ------------------------------------------------------------------ *
  * Migrations
  * ------------------------------------------------------------------ */
 
 /**
- * Keyed by the version being migrated FROM. Each returns data at version
- * key+1. Never edit a shipped migration — add the next one.
+ * Keyed by the version being migrated FROM. Each returns data one version
+ * newer. Never edit a shipped migration — add the next one.
  */
 const MIGRATIONS = {
   /**
-   * 0 -> 1: the pre-versioned prototype had no schemaVersion, kept program
-   * settings as loose top-level keys, and stored session length as an
-   * end-time string. Normalise into the v1 shape.
+   * 0 -> 1: the pre-versioned prototype had no version field, kept program
+   * settings as loose top-level keys, and stored session length as an end
+   * timestamp.
    */
   0(data) {
-    const base = emptyProgram();
     return {
-      ...base,
-      schemaVersion: 1,
+      version: 1,
+      exportedAt: data.exportedAt ?? null,
       program: {
-        ...base.program,
-        name: data.programName ?? base.program.name,
-        adminTimeZone: data.adminTimeZone ?? base.program.adminTimeZone,
-        studentTimeZone: data.studentTimeZone ?? base.program.studentTimeZone
+        name: data.programName ?? 'Weekend Tutoring',
+        adminTimeZone: data.adminTimeZone ?? guessTimeZone(),
+        studentTimeZone: data.studentTimeZone ?? 'Asia/Shanghai',
+        defaultSessionMinutes: 60,
+        terms: []
       },
       tutors: data.tutors ?? [],
       students: data.students ?? [],
@@ -83,11 +221,153 @@ const MIGRATIONS = {
         return { ...rest, durationMinutes: Number.isFinite(minutes) ? minutes : null };
       })
     };
+  },
+
+  /**
+   * 1 -> 2: separate `tutors` and `students` tables become one `people`
+   * table with a role discriminator; `matches` becomes `pairings`; nested
+   * per-person availability is lifted into its own table; sessions lose
+   * their denormalised tutorId/studentId in favour of pairingId, and their
+   * `status` string becomes an `occurred` boolean.
+   *
+   * Sessions that recorded a tutor and student but no match get a
+   * reconstructed pairing, because dropping them would silently delete
+   * logged volunteer hours.
+   */
+  1(data) {
+    const people = [
+      ...(data.tutors ?? []).map((t) => liftTutor(t)),
+      ...(data.students ?? []).map((s) => liftStudent(s))
+    ];
+
+    const availability = [
+      ...(data.tutors ?? []).flatMap((t) => liftAvailability(t)),
+      ...(data.students ?? []).flatMap((s) => liftAvailability(s))
+    ];
+
+    const pairings = (data.matches ?? []).map((m) => ({
+      id: m.id ?? newId('pair'),
+      tutorId: m.tutorId ?? '',
+      studentId: m.studentId ?? '',
+      status: m.status === 'ended' ? 'ended' : m.status === 'paused' ? 'paused' : 'active',
+      startedAt: m.startedAt ?? m.createdAt ?? null,
+      endedAt: m.endedAt ?? null,
+      // The old model pinned one subject per match. It is not a field any
+      // more, so carry it into notes rather than dropping it.
+      notes: [m.notes, m.subject ? `Subject at pairing time: ${m.subject}` : null]
+        .filter(Boolean)
+        .join(' ')
+    }));
+
+    const pairingByPair = new Map(pairings.map((p) => [`${p.tutorId}|${p.studentId}`, p]));
+
+    const sessions = (data.sessions ?? []).map((s) => {
+      let pairingId = s.matchId ?? '';
+      if (!pairingId || !pairings.some((p) => p.id === pairingId)) {
+        const key = `${s.tutorId ?? ''}|${s.studentId ?? ''}`;
+        let pairing = pairingByPair.get(key);
+        if (!pairing && s.tutorId && s.studentId) {
+          pairing = {
+            id: newId('pair'),
+            tutorId: s.tutorId,
+            studentId: s.studentId,
+            status: 'ended',
+            startedAt: s.startsAt ?? null,
+            endedAt: s.startsAt ?? null,
+            notes: 'Reconstructed during the v1 to v2 migration from a session with no match.'
+          };
+          pairings.push(pairing);
+          pairingByPair.set(key, pairing);
+        }
+        pairingId = pairing?.id ?? '';
+      }
+
+      return {
+        id: s.id ?? newId('ses'),
+        pairingId,
+        scheduledAt: s.startsAt ?? null,
+        occurred: s.status === 'held',
+        durationMinutes: s.status === 'held' ? (s.durationMinutes ?? 0) : 0,
+        prepMinutes: 0,
+        followupMinutes: 0,
+        covered: s.note ?? '',
+        homework: '',
+        loggedAt: s.loggedAt ?? s.startsAt ?? null
+      };
+    });
+
+    return {
+      version: 2,
+      exportedAt: data.exportedAt ?? null,
+      program: { ...(data.program ?? {}) },
+      people,
+      pairings,
+      sessions,
+      availability
+    };
   }
 };
 
+function liftCommon(person, role) {
+  return {
+    id: person.id,
+    role,
+    name: person.displayName ?? person.name ?? '',
+    preferredName: person.preferredName ?? '',
+    email: person.email ?? '',
+    wechat: person.wechat ?? '',
+    timezone: person.timeZone ?? person.timezone ?? (role === 'student' ? 'Asia/Shanghai' : guessTimeZone()),
+    locale: person.locale ?? (role === 'student' ? 'zh' : 'en'),
+    active: person.active !== false,
+    createdAt: person.createdAt ?? null
+  };
+}
+
+function liftTutor(t) {
+  return {
+    ...liftCommon(t, 'tutor'),
+    school: t.school ?? '',
+    grade: t.gradeLevel ?? t.grade ?? null,
+    subjects: t.subjects ?? [],
+    // The v1 model had no notion of which levels a tutor could handle.
+    // Empty means "unstated", which the scorer treats as no constraint.
+    levelsComfortable: t.levelsComfortable ?? [],
+    maxStudents: t.maxStudents ?? 2,
+    bio: t.notes ?? t.bio ?? '',
+    meetingLink: t.meetingLink ?? ''
+  };
+}
+
+function liftStudent(s) {
+  return {
+    ...liftCommon(s, 'student'),
+    grade: s.gradeLevel ?? s.grade ?? null,
+    englishLevel: s.englishLevel ?? 'beginner',
+    // v1 called these "subjects"; from a student's side they are goals.
+    goals: s.goals ?? s.subjects ?? [],
+    interests: s.interests ?? [],
+    guardianName: s.guardianName ?? '',
+    guardianWechat: s.guardianWechat ?? '',
+    guardianEmail: s.guardianEmail ?? (typeof s.guardianContact === 'string' ? s.guardianContact : '')
+  };
+}
+
+function liftAvailability(person) {
+  return (person.availability ?? []).map((slot) => ({
+    personId: person.id,
+    weekday: slot.weekday ?? slot.day ?? 0,
+    startTime: slot.startTime ?? slot.start ?? '00:00',
+    endTime: slot.endTime ?? slot.end ?? '00:00',
+    timezone: slot.timezone ?? slot.tz ?? person.timeZone ?? person.timezone ?? 'UTC'
+  }));
+}
+
 /**
  * Bring any historical export up to the current schema.
+ *
+ * Called on every load and every import. Accepts the pre-versioned shape
+ * (no version field at all) as version 0.
+ *
  * @returns {{data: object, applied: number[]}}
  */
 export function migrate(input) {
@@ -96,92 +376,244 @@ export function migrate(input) {
   }
 
   let data = input;
-  let version = Number.isInteger(data.schemaVersion) ? data.schemaVersion : 0;
+  let version = detectVersion(data);
   const applied = [];
 
   if (version > SCHEMA_VERSION) {
     throw new Error(
-      `This file was saved by a newer version of the app (schema ${version}; ` +
+      `This file was saved by a newer version of the app (version ${version}; ` +
       `this build understands ${SCHEMA_VERSION}). Update the app before importing.`
     );
   }
 
   while (version < SCHEMA_VERSION) {
     const step = MIGRATIONS[version];
-    if (!step) throw new Error(`No migration from schema version ${version}.`);
+    if (!step) throw new Error(`No migration path from version ${version}.`);
     data = step(data);
     applied.push(version);
-    version = data.schemaVersion;
+    if (detectVersion(data) !== version + 1) {
+      throw new Error(`Migration from version ${version} did not produce version ${version + 1}.`);
+    }
+    version += 1;
   }
 
   return { data: normalise(data), applied };
+}
+
+function detectVersion(data) {
+  if (Number.isInteger(data.version)) return data.version;
+  // v1 wrote `schemaVersion`; v0 wrote nothing at all.
+  if (Number.isInteger(data.schemaVersion)) return data.schemaVersion;
+  return 0;
 }
 
 /** Fill in absent collections so views never guard against undefined. */
 function normalise(data) {
   const base = emptyProgram();
   return {
-    schemaVersion: SCHEMA_VERSION,
+    version: SCHEMA_VERSION,
     exportedAt: data.exportedAt ?? null,
     program: { ...base.program, ...(data.program ?? {}) },
-    tutors: Array.isArray(data.tutors) ? data.tutors : [],
-    students: Array.isArray(data.students) ? data.students : [],
-    matches: Array.isArray(data.matches) ? data.matches : [],
-    sessions: Array.isArray(data.sessions) ? data.sessions : []
+    people: asArray(data.people),
+    pairings: asArray(data.pairings),
+    sessions: asArray(data.sessions),
+    availability: asArray(data.availability)
   };
 }
 
+function asArray(value) {
+  return Array.isArray(value) ? value : [];
+}
+
 /* ------------------------------------------------------------------ *
- * Integrity
+ * Validation
  * ------------------------------------------------------------------ */
 
+const ISO_UTC = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?Z$/;
+
+function isIsoUtc(value) {
+  return typeof value === 'string' && ISO_UTC.test(value) && !Number.isNaN(Date.parse(value));
+}
+
 /**
- * Non-fatal report on referential integrity. Import never rejects a file for
- * these — a coordinator hand-editing JSON at 11pm should get their data
- * back plus a list of what looks off, not a wall.
+ * Structural check, run before anything is allowed to replace live state.
+ *
+ * `errors` are things that would corrupt the app: bad types, duplicate ids,
+ * references to records that do not exist. An import carrying any of these is
+ * refused outright — a half-applied import is worse than a rejected one.
+ *
+ * `warnings` are things that are merely odd: a tutor with no availability, an
+ * unrecognised English level. These pass through and get surfaced, because a
+ * coordinator hand-editing JSON at 11pm should get their data back plus a
+ * list of what looks off.
  *
  * @returns {{errors: string[], warnings: string[]}}
  */
-export function checkIntegrity(data) {
+export function validate(data) {
   const errors = [];
   const warnings = [];
 
-  const tutorIds = new Set(data.tutors.map((t) => t.id));
-  const studentIds = new Set(data.students.map((s) => s.id));
-  const matchIds = new Set(data.matches.map((m) => m.id));
-
-  dupes(data.tutors, 'tutor').forEach((m) => errors.push(m));
-  dupes(data.students, 'student').forEach((m) => errors.push(m));
-  dupes(data.matches, 'match').forEach((m) => errors.push(m));
-  dupes(data.sessions, 'session').forEach((m) => errors.push(m));
-
-  for (const m of data.matches) {
-    if (!tutorIds.has(m.tutorId)) warnings.push(`Match ${m.id} points at unknown tutor ${m.tutorId}.`);
-    if (!studentIds.has(m.studentId)) warnings.push(`Match ${m.id} points at unknown student ${m.studentId}.`);
+  if (!data || typeof data !== 'object') {
+    return { errors: ['Not a program file: expected a JSON object.'], warnings };
   }
 
-  for (const s of data.sessions) {
-    if (s.matchId && !matchIds.has(s.matchId)) {
-      warnings.push(`Session ${s.id} points at unknown match ${s.matchId}.`);
+  for (const key of ['people', 'pairings', 'sessions', 'availability']) {
+    if (!Array.isArray(data[key])) errors.push(`"${key}" must be an array.`);
+  }
+  if (errors.length) return { errors, warnings };
+
+  /* People */
+  const personIds = new Set();
+  const tutorIds = new Set();
+  const studentIds = new Set();
+
+  data.people.forEach((p, i) => {
+    const at = `people[${i}]`;
+    if (!p || typeof p !== 'object') { errors.push(`${at} is not an object.`); return; }
+    if (!p.id || typeof p.id !== 'string') { errors.push(`${at} has no id.`); return; }
+    if (personIds.has(p.id)) { errors.push(`Duplicate person id "${p.id}".`); return; }
+    personIds.add(p.id);
+
+    if (!ROLES.includes(p.role)) {
+      errors.push(`Person "${p.id}" has role "${p.role}"; expected one of ${ROLES.join(', ')}.`);
+      return;
     }
-    if (!tutorIds.has(s.tutorId)) warnings.push(`Session ${s.id} points at unknown tutor ${s.tutorId}.`);
-    if (typeof s.startsAt !== 'string' || !s.startsAt.endsWith('Z')) {
-      errors.push(`Session ${s.id} has a startsAt that is not an ISO UTC string.`);
+    if (p.role === 'tutor') tutorIds.add(p.id); else studentIds.add(p.id);
+
+    if (typeof p.name !== 'string' || p.name.trim() === '') {
+      warnings.push(`Person "${p.id}" has no name.`);
+    }
+    if (p.timezone != null && !isValidTimeZone(p.timezone)) {
+      errors.push(`Person "${p.id}" has an unknown time zone "${p.timezone}".`);
+    }
+    if (p.role === 'tutor') {
+      if (p.maxStudents != null && !(Number.isFinite(Number(p.maxStudents)) && Number(p.maxStudents) >= 0)) {
+        errors.push(`Tutor "${p.id}" has a non-numeric maxStudents "${p.maxStudents}".`);
+      }
+      for (const field of ['subjects', 'levelsComfortable']) {
+        if (p[field] != null && !Array.isArray(p[field])) {
+          errors.push(`Tutor "${p.id}" field "${field}" must be an array.`);
+        }
+      }
+    } else {
+      for (const field of ['goals', 'interests']) {
+        if (p[field] != null && !Array.isArray(p[field])) {
+          errors.push(`Student "${p.id}" field "${field}" must be an array.`);
+        }
+      }
+      if (p.englishLevel && !ENGLISH_LEVELS.includes(p.englishLevel)) {
+        warnings.push(`Student "${p.id}" has an unrecognised English level "${p.englishLevel}".`);
+      }
+    }
+  });
+
+  /* Pairings */
+  const pairingIds = new Set();
+  data.pairings.forEach((p, i) => {
+    const at = `pairings[${i}]`;
+    if (!p || typeof p !== 'object') { errors.push(`${at} is not an object.`); return; }
+    if (!p.id || typeof p.id !== 'string') { errors.push(`${at} has no id.`); return; }
+    if (pairingIds.has(p.id)) { errors.push(`Duplicate pairing id "${p.id}".`); return; }
+    pairingIds.add(p.id);
+
+    if (!PAIRING_STATUSES.includes(p.status)) {
+      errors.push(`Pairing "${p.id}" has status "${p.status}"; expected one of ${PAIRING_STATUSES.join(', ')}.`);
+    }
+    if (!personIds.has(p.tutorId)) {
+      errors.push(`Pairing "${p.id}" references tutor "${p.tutorId}", who is not in this file.`);
+    } else if (!tutorIds.has(p.tutorId)) {
+      errors.push(`Pairing "${p.id}" references "${p.tutorId}" as a tutor, but that person is a student.`);
+    }
+    if (!personIds.has(p.studentId)) {
+      errors.push(`Pairing "${p.id}" references student "${p.studentId}", who is not in this file.`);
+    } else if (!studentIds.has(p.studentId)) {
+      errors.push(`Pairing "${p.id}" references "${p.studentId}" as a student, but that person is a tutor.`);
+    }
+    for (const field of ['startedAt', 'endedAt']) {
+      if (p[field] != null && !isIsoUtc(p[field])) {
+        errors.push(`Pairing "${p.id}" field "${field}" is not an ISO 8601 UTC string: "${p[field]}".`);
+      }
+    }
+    if (p.status === 'ended' && p.endedAt == null) {
+      warnings.push(`Pairing "${p.id}" is ended but has no endedAt.`);
+    }
+  });
+
+  /* Sessions */
+  const sessionIds = new Set();
+  data.sessions.forEach((s, i) => {
+    const at = `sessions[${i}]`;
+    if (!s || typeof s !== 'object') { errors.push(`${at} is not an object.`); return; }
+    if (!s.id || typeof s.id !== 'string') { errors.push(`${at} has no id.`); return; }
+    if (sessionIds.has(s.id)) { errors.push(`Duplicate session id "${s.id}".`); return; }
+    sessionIds.add(s.id);
+
+    if (!pairingIds.has(s.pairingId)) {
+      errors.push(`Session "${s.id}" references pairing "${s.pairingId}", which is not in this file.`);
+    }
+    if (!isIsoUtc(s.scheduledAt)) {
+      errors.push(`Session "${s.id}" scheduledAt is not an ISO 8601 UTC string: "${s.scheduledAt}".`);
+    }
+    if (s.loggedAt != null && !isIsoUtc(s.loggedAt)) {
+      errors.push(`Session "${s.id}" loggedAt is not an ISO 8601 UTC string: "${s.loggedAt}".`);
+    }
+    if (typeof s.occurred !== 'boolean') {
+      errors.push(`Session "${s.id}" field "occurred" must be true or false, not "${s.occurred}".`);
+    }
+    for (const field of ['durationMinutes', 'prepMinutes', 'followupMinutes']) {
+      const value = s[field];
+      if (value == null) continue;
+      const num = Number(value);
+      if (!Number.isFinite(num) || num < 0) {
+        errors.push(`Session "${s.id}" field "${field}" must be a number of minutes, not "${value}".`);
+      }
+    }
+  });
+
+  /* Availability */
+  data.availability.forEach((a, i) => {
+    const at = `availability[${i}]`;
+    if (!a || typeof a !== 'object') { errors.push(`${at} is not an object.`); return; }
+    if (!personIds.has(a.personId)) {
+      errors.push(`${at} references person "${a.personId}", who is not in this file.`);
+      return;
+    }
+    if (!Number.isInteger(a.weekday) || a.weekday < 0 || a.weekday > 6) {
+      errors.push(`${at} weekday must be an integer 0 (Sunday) to 6 (Saturday), not "${a.weekday}".`);
+    }
+    for (const field of ['startTime', 'endTime']) {
+      try {
+        parseHhMm(a[field]);
+      } catch {
+        errors.push(`${at} ${field} must be "HH:MM", not "${a[field]}".`);
+      }
+    }
+    if (!isValidTimeZone(a.timezone)) {
+      errors.push(`${at} has an unknown time zone "${a.timezone}".`);
+    }
+  });
+
+  /* Soft observations */
+  for (const person of data.people) {
+    if (person.active === false) continue;
+    if (!data.availability.some((a) => a.personId === person.id)) {
+      warnings.push(`${person.name || person.id} is active but has no availability, so they cannot be matched.`);
     }
   }
 
   return { errors, warnings };
 }
 
-function dupes(list, label) {
-  const seen = new Set();
-  const out = [];
-  for (const item of list) {
-    if (!item?.id) { out.push(`A ${label} record has no id.`); continue; }
-    if (seen.has(item.id)) out.push(`Duplicate ${label} id: ${item.id}.`);
-    seen.add(item.id);
-  }
-  return out;
+/** Aggregate errors into one message a human can act on. */
+function validationMessage(errors) {
+  const shown = errors.slice(0, 8);
+  const rest = errors.length - shown.length;
+  return [
+    `That file has ${errors.length} problem${errors.length === 1 ? '' : 's'} and was not imported:`,
+    ...shown.map((e) => `  • ${e}`),
+    rest > 0 ? `  • …and ${rest} more.` : null,
+    'Nothing was changed.'
+  ].filter(Boolean).join('\n');
 }
 
 /* ------------------------------------------------------------------ *
@@ -213,13 +645,13 @@ function emit() {
 
 /**
  * Replace state via an updater, persist, notify.
- * @param {(draft: object) => object} updater must return the next state
+ * @param {(current: object) => object} updater must return the next state
  */
 export function update(updater) {
   const next = updater(state);
   if (!next || typeof next !== 'object') throw new TypeError('update() must return the next state');
   state = normalise(next);
-  persist();
+  save();
   emit();
   return state;
 }
@@ -229,19 +661,22 @@ export function replaceState(next) {
 }
 
 /* ------------------------------------------------------------------ *
- * localStorage cache
+ * load / save / reset
  * ------------------------------------------------------------------ */
 
-let persistTimer = null;
+let saveTimer = null;
 
-/** Debounced so typing into a form is not 40 serialisations. */
-function persist() {
-  if (persistTimer !== null) clearTimeout(persistTimer);
-  persistTimer = setTimeout(persistNow, 250);
+/**
+ * Persist to the localStorage cache. Debounced, so typing into a form is not
+ * forty serialisations.
+ */
+export function save() {
+  if (saveTimer !== null) clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveNow, 250);
 }
 
-export function persistNow() {
-  persistTimer = null;
+export function saveNow() {
+  saveTimer = null;
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     return true;
@@ -254,39 +689,45 @@ export function persistNow() {
 }
 
 /**
- * Read the cache into memory. Safe to call once at boot.
- * @returns {{loaded: boolean, migrated: number[], error: string|null}}
+ * Read the cache into memory, migrating on the way. Safe to call once at boot.
+ *
+ * A cache that fails validation is left on disk untouched and reported: it is
+ * still the only copy of something, and silently discarding it would be the
+ * one unrecoverable move available here.
+ *
+ * @returns {{loaded: boolean, migrated: number[], warnings: string[], error: string|null}}
  */
-export function loadFromCache() {
+export function load() {
   let raw;
   try {
     raw = localStorage.getItem(STORAGE_KEY);
   } catch (err) {
-    return { loaded: false, migrated: [], error: `Storage unavailable: ${err?.message ?? err}` };
+    return { loaded: false, migrated: [], warnings: [], error: `Storage unavailable: ${err?.message ?? err}` };
   }
-  if (!raw) return { loaded: false, migrated: [], error: null };
+  if (!raw) return { loaded: false, migrated: [], warnings: [], error: null };
 
   try {
     const { data, applied } = migrate(JSON.parse(raw));
+    const { errors, warnings } = validate(data);
+    if (errors.length) {
+      console.error('[store] cached data failed validation, starting empty:', errors);
+      return { loaded: false, migrated: [], warnings: [], error: validationMessage(errors) };
+    }
     state = data;
-    if (applied.length) persistNow();
+    if (applied.length) saveNow();
     emit();
-    return { loaded: true, migrated: applied, error: null };
+    return { loaded: true, migrated: applied, warnings, error: null };
   } catch (err) {
-    // Do not delete it. A corrupt cache is still the only copy of something.
     console.error('[store] cache unreadable, starting empty:', err);
-    return { loaded: false, migrated: [], error: err.message };
+    return { loaded: false, migrated: [], warnings: [], error: err.message };
   }
 }
 
-export function clearCache() {
+/** Clear the cache and return to an empty program. */
+export function reset() {
   try {
     localStorage.removeItem(STORAGE_KEY);
   } catch { /* nothing to do */ }
-}
-
-export function resetAll() {
-  clearCache();
   state = emptyProgram();
   emit();
   return state;
@@ -302,36 +743,35 @@ export function cacheSizeBytes() {
 }
 
 /* ------------------------------------------------------------------ *
- * Export / import — the real save mechanism
+ * JSON export / import
  * ------------------------------------------------------------------ */
 
 /** Pretty-printed so a human can read and diff it. */
 export function toJson(data = state) {
   const payload = {
     ...data,
-    schemaVersion: SCHEMA_VERSION,
+    version: SCHEMA_VERSION,
     exportedAt: new Date().toISOString()
   };
   return JSON.stringify(payload, null, 2);
 }
 
-export function suggestedFilename(data = state) {
+export function suggestedFilename(data = state, extension = 'json') {
   const date = new Date().toISOString().slice(0, 10);
   const slug = (data.program?.name ?? 'program')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '') || 'program';
-  return `${slug}-${date}.json`;
+  return `${slug}-${date}.${extension}`;
 }
 
 /**
- * Trigger a file download. This is the only function in store.js that
- * touches the DOM, and it is here rather than in a view because "the
- * export is the source of truth" is a data-layer concern.
+ * Trigger a browser download. The only DOM-touching code in this module, and
+ * it lives here because "the export is the source of truth" is a data-layer
+ * concern rather than a screen's.
  */
-export function downloadJson(data = state) {
-  const filename = suggestedFilename(data);
-  const blob = new Blob([toJson(data)], { type: 'application/json' });
+function download(filename, text, mime) {
+  const blob = new Blob([text], { type: mime });
   const url = URL.createObjectURL(blob);
 
   const a = document.createElement('a');
@@ -347,14 +787,21 @@ export function downloadJson(data = state) {
   return filename;
 }
 
+/** Download the whole program as one dated JSON file. */
+export function exportJson(data = state) {
+  return download(suggestedFilename(data, 'json'), toJson(data), 'application/json');
+}
+
 /**
- * Import a program file, replacing everything in memory.
+ * Parse and validate JSON text without touching live state.
  *
- * @param {string} text raw JSON
- * @returns {{data: object, migrated: number[], integrity: {errors:string[], warnings:string[]}}}
- * @throws if the text is not parseable JSON or not a program file
+ * Exposed separately from importJson so the round-trip test can exercise it
+ * without writing to the localStorage key the real app uses.
+ *
+ * @returns {{data: object, migrated: number[], warnings: string[]}}
+ * @throws {Error} with a human-readable message; state is untouched
  */
-export function importJson(text) {
+export function parseProgramJson(text) {
   let parsed;
   try {
     parsed = JSON.parse(text);
@@ -363,19 +810,34 @@ export function importJson(text) {
   }
 
   const { data, applied } = migrate(parsed);
-  const integrity = checkIntegrity(data);
+  const { errors, warnings } = validate(data);
+  if (errors.length) throw new Error(validationMessage(errors));
 
-  replaceState(data);
-  persistNow();
+  return { data, migrated: applied, warnings };
+}
 
-  return { data, migrated: applied, integrity };
+/**
+ * Import a program file, replacing everything in memory.
+ *
+ * Validated in full before anything is replaced: a malformed file is refused
+ * with a clear message and leaves the current program exactly as it was.
+ *
+ * @param {File|Blob|string} file a File from an <input>, or raw JSON text
+ * @returns {Promise<{data: object, migrated: number[], warnings: string[]}>}
+ */
+export async function importJson(file) {
+  const text = typeof file === 'string' ? file : await readFileAsText(file);
+  const result = parseProgramJson(text);
+  replaceState(result.data);
+  saveNow();
+  return result;
 }
 
 export function readFileAsText(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(new Error(`Could not read ${file.name}.`));
+    reader.onerror = () => reject(new Error(`Could not read ${file?.name ?? 'that file'}.`));
     reader.readAsText(file);
   });
 }
@@ -384,7 +846,7 @@ export function readFileAsText(file) {
  * Load the committed demo dataset.
  *
  * Resolved against import.meta.url rather than the page path so it works at
- * the domain root and under a GitHub Pages project subpath (/evf/) without
+ * a domain root and under a GitHub Pages project subpath alike, without
  * either being configured anywhere.
  */
 export async function loadSampleData() {
@@ -392,7 +854,7 @@ export async function loadSampleData() {
   let res;
   try {
     res = await fetch(url);
-  } catch (err) {
+  } catch {
     throw new Error(
       'Could not read data/sample.json. If this page was opened as a file:// ' +
       'URL, serve the folder over HTTP instead.'
@@ -400,6 +862,379 @@ export async function loadSampleData() {
   }
   if (!res.ok) throw new Error(`Could not read data/sample.json (HTTP ${res.status}).`);
   return importJson(await res.text());
+}
+
+/* ------------------------------------------------------------------ *
+ * CSV export / import
+ * ------------------------------------------------------------------ */
+
+/**
+ * Column definitions per table. `to` reads a record into a cell; `from`
+ * reads a cell back into a record. Symmetric on purpose, so a CSV export
+ * re-imports.
+ */
+const CSV_TABLES = {
+  tutors: {
+    label: 'Tutors',
+    columns: [
+      ['id', (p) => p.id, (c) => c || undefined],
+      ['name', (p) => p.name, (c) => c],
+      ['preferredName', (p) => p.preferredName, (c) => c],
+      ['email', (p) => p.email, (c) => c],
+      ['wechat', (p) => p.wechat, (c) => c],
+      ['timezone', (p) => p.timezone, (c) => c || undefined],
+      ['locale', (p) => p.locale, (c) => c || undefined],
+      ['active', (p) => p.active, (c) => parseBoolean(c, true)],
+      ['school', (p) => p.school, (c) => c],
+      ['grade', (p) => p.grade, (c) => parseNumber(c, null)],
+      ['subjects', (p) => formatList(p.subjects), (c) => parseList(c)],
+      ['levelsComfortable', (p) => formatList(p.levelsComfortable), (c) => parseList(c)],
+      ['maxStudents', (p) => p.maxStudents, (c) => parseNumber(c, 2)],
+      ['bio', (p) => p.bio, (c) => c],
+      ['meetingLink', (p) => p.meetingLink, (c) => c],
+      ['createdAt', (p) => p.createdAt, (c) => c || undefined]
+    ],
+    select: (data) => data.people.filter((p) => p.role === 'tutor'),
+    build: (fields) => newTutor(fields)
+  },
+
+  students: {
+    label: 'Students',
+    columns: [
+      ['id', (p) => p.id, (c) => c || undefined],
+      ['name', (p) => p.name, (c) => c],
+      ['preferredName', (p) => p.preferredName, (c) => c],
+      ['email', (p) => p.email, (c) => c],
+      ['wechat', (p) => p.wechat, (c) => c],
+      ['timezone', (p) => p.timezone, (c) => c || undefined],
+      ['locale', (p) => p.locale, (c) => c || undefined],
+      ['active', (p) => p.active, (c) => parseBoolean(c, true)],
+      ['grade', (p) => p.grade, (c) => parseNumber(c, null)],
+      ['englishLevel', (p) => p.englishLevel, (c) => c || undefined],
+      ['goals', (p) => formatList(p.goals), (c) => parseList(c)],
+      ['interests', (p) => formatList(p.interests), (c) => parseList(c)],
+      ['guardianName', (p) => p.guardianName, (c) => c],
+      ['guardianWechat', (p) => p.guardianWechat, (c) => c],
+      ['guardianEmail', (p) => p.guardianEmail, (c) => c],
+      ['createdAt', (p) => p.createdAt, (c) => c || undefined]
+    ],
+    select: (data) => data.people.filter((p) => p.role === 'student'),
+    build: (fields) => newStudent(fields)
+  },
+
+  availability: {
+    label: 'Availability',
+    columns: [
+      ['personId', (a) => a.personId, (c) => c],
+      ['weekday', (a) => a.weekday, (c) => parseNumber(c, null)],
+      ['startTime', (a) => a.startTime, (c) => c],
+      ['endTime', (a) => a.endTime, (c) => c],
+      ['timezone', (a) => a.timezone, (c) => c]
+    ],
+    select: (data) => data.availability,
+    build: (fields) => fields
+  },
+
+  pairings: {
+    label: 'Pairings',
+    columns: [
+      ['id', (p) => p.id, (c) => c || undefined],
+      ['tutorId', (p) => p.tutorId, (c) => c],
+      ['studentId', (p) => p.studentId, (c) => c],
+      ['status', (p) => p.status, (c) => c || 'active'],
+      ['startedAt', (p) => p.startedAt, (c) => c || null],
+      ['endedAt', (p) => p.endedAt, (c) => c || null],
+      ['notes', (p) => p.notes, (c) => c]
+    ],
+    select: (data) => data.pairings,
+    build: (fields) => newPairing(fields)
+  },
+
+  sessions: {
+    label: 'Sessions',
+    columns: [
+      ['id', (s) => s.id, (c) => c || undefined],
+      ['pairingId', (s) => s.pairingId, (c) => c],
+      ['scheduledAt', (s) => s.scheduledAt, (c) => c],
+      ['occurred', (s) => s.occurred, (c) => parseBoolean(c, true)],
+      ['durationMinutes', (s) => s.durationMinutes, (c) => parseNumber(c, 0)],
+      ['prepMinutes', (s) => s.prepMinutes, (c) => parseNumber(c, 0)],
+      ['followupMinutes', (s) => s.followupMinutes, (c) => parseNumber(c, 0)],
+      ['covered', (s) => s.covered, (c) => c],
+      ['homework', (s) => s.homework, (c) => c],
+      ['loggedAt', (s) => s.loggedAt, (c) => c || null]
+    ],
+    select: (data) => data.sessions,
+    build: (fields) => newSession(fields)
+  }
+};
+
+export const CSV_TYPES = Object.freeze(Object.keys(CSV_TABLES));
+
+function csvTable(type) {
+  const table = CSV_TABLES[type];
+  if (!table) {
+    throw new Error(`Unknown CSV type "${type}". Expected one of: ${CSV_TYPES.join(', ')}.`);
+  }
+  return table;
+}
+
+/** CSV text for one table. */
+export function toCsvText(type, data = state) {
+  const table = csvTable(type);
+  const header = table.columns.map(([name]) => name);
+  const records = table.select(data).map((record) => {
+    const row = {};
+    for (const [name, read] of table.columns) row[name] = read(record);
+    return row;
+  });
+  return objectsToCsv(header, records);
+}
+
+/** Download one table as a dated CSV file. */
+export function exportCsv(type, data = state) {
+  const filename = suggestedFilename(data, 'csv').replace(/\.csv$/, `-${type}.csv`);
+  return download(filename, toCsvText(type, data), 'text/csv;charset=utf-8');
+}
+
+/**
+ * Parse CSV text into records for `type`, without touching live state.
+ *
+ * `providedColumns` lists the columns the file actually contained. Callers
+ * merging into existing records must use it: every returned record is fully
+ * populated with defaults so a genuinely new row is complete, which means
+ * blindly spreading one over an existing record would overwrite real values
+ * with defaults. A roster CSV carrying only `name` must not reset anybody's
+ * join date, subjects, or maximum.
+ *
+ * @returns {{records: object[], providedColumns: string[], errors: string[], warnings: string[]}}
+ */
+export function parseCsvText(type, text) {
+  const table = csvTable(type);
+  const { header, records: raw } = parseCsvToObjects(text);
+  const errors = [];
+  const warnings = [];
+
+  if (raw.length === 0) {
+    return { records: [], providedColumns: [], errors: ['That CSV has no data rows.'], warnings };
+  }
+
+  const known = new Set(table.columns.map(([name]) => name));
+  const required = type === 'availability'
+    ? ['personId', 'weekday', 'startTime', 'endTime']
+    : type === 'tutors' || type === 'students' ? ['name'] : ['id'];
+
+  for (const column of required) {
+    if (!header.includes(column)) {
+      errors.push(`That CSV is missing a required "${column}" column. Found: ${header.join(', ') || '(none)'}.`);
+    }
+  }
+  for (const column of header) {
+    if (!known.has(column)) warnings.push(`Ignoring unrecognised column "${column}".`);
+  }
+  if (errors.length) return { records: [], providedColumns: [], errors, warnings };
+
+  const providedColumns = table.columns.map(([name]) => name).filter((name) => header.includes(name));
+
+  const records = raw.map((row, i) => {
+    const fields = {};
+    for (const [name, , write] of table.columns) {
+      if (!header.includes(name)) continue;
+      const value = write(row[name]);
+      if (value !== undefined) fields[name] = value;
+    }
+    if (type === 'availability') {
+      fields.timezone = fields.timezone || undefined;
+      if (!fields.timezone) {
+        errors.push(`Row ${i + 2} has no timezone, and availability without a zone is meaningless.`);
+      }
+    }
+    return table.build(fields);
+  });
+
+  return { records, providedColumns, errors, warnings };
+}
+
+/**
+ * Bulk roster import. Adds new records and updates existing ones by id;
+ * never deletes. A roster CSV is someone adding this term's signups, not
+ * declaring the program's entire membership.
+ *
+ * Validated as a whole before anything is committed, so a bad row leaves the
+ * program untouched rather than half-updated.
+ *
+ * @param {File|Blob|string} file
+ * @param {'tutors'|'students'|'availability'|'pairings'|'sessions'} type
+ * @returns {Promise<{added: number, updated: number, warnings: string[]}>}
+ */
+export async function importCsv(file, type) {
+  const table = csvTable(type);
+  const text = typeof file === 'string' ? file : await readFileAsText(file);
+  const { records, providedColumns, errors, warnings } = parseCsvText(type, text);
+  if (errors.length) throw new Error(validationMessage(errors));
+
+  // Only the columns the file carried may overwrite an existing record. The
+  // parsed records are fully defaulted so a new row is complete; spreading
+  // those defaults over somebody's existing row would quietly erase fields
+  // the CSV never mentioned.
+  const provided = new Set(providedColumns);
+  const patchOf = (record) =>
+    Object.fromEntries(Object.entries(record).filter(([key]) => provided.has(key)));
+
+  const current = state;
+  let next;
+  let added = 0;
+  let updated = 0;
+
+  if (type === 'availability') {
+    // Availability rows have no id. Replacing every row for the people named
+    // in the file is the only sane merge: a person's availability is a set,
+    // and appending would silently double it on a re-import.
+    const touched = new Set(records.map((r) => r.personId));
+    const kept = current.availability.filter((a) => !touched.has(a.personId));
+    added = records.length;
+    next = { ...current, availability: [...kept, ...records] };
+  } else if (type === 'tutors' || type === 'students') {
+    const byId = new Map(current.people.map((p) => [p.id, p]));
+    for (const record of records) {
+      if (byId.has(record.id)) { byId.set(record.id, { ...byId.get(record.id), ...patchOf(record) }); updated += 1; }
+      else { byId.set(record.id, record); added += 1; }
+    }
+    next = { ...current, people: [...byId.values()] };
+  } else {
+    const key = type === 'pairings' ? 'pairings' : 'sessions';
+    const byId = new Map(current[key].map((r) => [r.id, r]));
+    for (const record of records) {
+      if (byId.has(record.id)) { byId.set(record.id, { ...byId.get(record.id), ...patchOf(record) }); updated += 1; }
+      else { byId.set(record.id, record); added += 1; }
+    }
+    next = { ...current, [key]: [...byId.values()] };
+  }
+
+  const check = validate(normalise(next));
+  if (check.errors.length) throw new Error(validationMessage(check.errors));
+
+  replaceState(next);
+  saveNow();
+  return { added, updated, warnings: [...warnings, ...check.warnings] };
+}
+
+/* ------------------------------------------------------------------ *
+ * Query helpers
+ * ------------------------------------------------------------------ */
+
+export function peopleByRole(role, data = state) {
+  return data.people.filter((p) => p.role === role);
+}
+
+export function tutors(data = state) {
+  return peopleByRole('tutor', data);
+}
+
+export function students(data = state) {
+  return peopleByRole('student', data);
+}
+
+export function personById(id, data = state) {
+  return data.people.find((p) => p.id === id) ?? null;
+}
+
+export function pairingById(id, data = state) {
+  return data.pairings.find((p) => p.id === id) ?? null;
+}
+
+/** Availability rows for one person. */
+export function availabilityFor(personId, data = state) {
+  return data.availability.filter((a) => a.personId === personId);
+}
+
+/**
+ * Active pairings involving `personId`, whichever side they are on.
+ * Paused pairings are excluded: paused means "not right now", and a screen
+ * asking for active pairings is asking what is happening this weekend.
+ */
+export function activePairingsFor(personId, data = state) {
+  return data.pairings.filter(
+    (p) => p.status === 'active' && (p.tutorId === personId || p.studentId === personId)
+  );
+}
+
+/** Every pairing involving `personId`, any status, newest first. */
+export function allPairingsFor(personId, data = state) {
+  return data.pairings
+    .filter((p) => p.tutorId === personId || p.studentId === personId)
+    .sort((a, b) => String(b.startedAt ?? '').localeCompare(String(a.startedAt ?? '')));
+}
+
+/** Sessions for one pairing, most recent first. */
+export function sessionsFor(pairingId, data = state) {
+  return data.sessions
+    .filter((s) => s.pairingId === pairingId)
+    .sort((a, b) => String(b.scheduledAt ?? '').localeCompare(String(a.scheduledAt ?? '')));
+}
+
+/** Sessions for one person, across all their pairings, most recent first. */
+export function sessionsForPerson(personId, data = state) {
+  const ids = new Set(allPairingsFor(personId, data).map((p) => p.id));
+  return data.sessions
+    .filter((s) => ids.has(s.pairingId))
+    .sort((a, b) => String(b.scheduledAt ?? '').localeCompare(String(a.scheduledAt ?? '')));
+}
+
+/**
+ * Active students with no active pairing — the coordinator's actual to-do
+ * list. Paused counts as unpaired: somebody has to pick it back up.
+ */
+export function unpairedStudents(data = state) {
+  const paired = new Set(
+    data.pairings.filter((p) => p.status === 'active').map((p) => p.studentId)
+  );
+  return students(data).filter((s) => s.active !== false && !paired.has(s.id));
+}
+
+/**
+ * Active tutors below their own stated maximum, with the room they have left.
+ * `maxStudents` is a limit the tutor set for themselves, so it is respected
+ * rather than treated as a target to fill (principle 1).
+ *
+ * @returns {Array<{tutor: object, active: number, capacity: number, remaining: number}>}
+ */
+export function tutorsWithCapacity(data = state) {
+  return tutors(data)
+    .filter((t) => t.active !== false)
+    .map((tutor) => {
+      const active = data.pairings.filter(
+        (p) => p.status === 'active' && p.tutorId === tutor.id
+      ).length;
+      const capacity = Number.isFinite(Number(tutor.maxStudents)) ? Number(tutor.maxStudents) : 2;
+      return { tutor, active, capacity, remaining: capacity - active };
+    })
+    .filter((row) => row.remaining > 0)
+    .sort((a, b) => b.remaining - a.remaining || a.tutor.name.localeCompare(b.tutor.name));
+}
+
+/** Active-pairing count per tutor, including those at zero. */
+export function tutorLoads(data = state) {
+  return tutors(data).map((tutor) => ({
+    tutorId: tutor.id,
+    name: tutor.name,
+    active: data.pairings.filter((p) => p.status === 'active' && p.tutorId === tutor.id).length,
+    capacity: Number(tutor.maxStudents ?? 2)
+  }));
+}
+
+/** Counts for the dashboard, in one pass a view can render directly. */
+export function summary(data = state) {
+  return {
+    tutors: tutors(data).length,
+    students: students(data).length,
+    activePairings: data.pairings.filter((p) => p.status === 'active').length,
+    pausedPairings: data.pairings.filter((p) => p.status === 'paused').length,
+    sessions: data.sessions.length,
+    sessionsOccurred: data.sessions.filter((s) => s.occurred === true).length,
+    unpairedStudents: unpairedStudents(data).length,
+    tutorsWithCapacity: tutorsWithCapacity(data).length
+  };
 }
 
 /* ------------------------------------------------------------------ *
@@ -417,19 +1252,24 @@ export function loadLangPreference() {
 export function saveLangPreference(lang) {
   try {
     localStorage.setItem(LANG_KEY, lang);
-  } catch { /* preference is not worth an error */ }
+  } catch { /* a preference is not worth an error */ }
 }
 
 /* ------------------------------------------------------------------ *
  * Ids
  * ------------------------------------------------------------------ */
 
+let idCounter = 0;
+
 /**
- * Readable, collision-resistant, and stable in an export a human might edit.
- * Not cryptographic; nothing here needs it to be.
+ * Readable, collision-resistant, and stable inside an export a human might
+ * hand-edit. Not cryptographic; nothing here needs it to be. The counter
+ * guarantees uniqueness within a session even when called in a tight loop,
+ * which Date.now() alone does not.
  */
 export function newId(prefix) {
   const rand = Math.random().toString(36).slice(2, 8);
   const stamp = Date.now().toString(36).slice(-4);
-  return `${prefix}_${stamp}${rand}`;
+  idCounter = (idCounter + 1) % 46656;
+  return `${prefix}_${stamp}${rand}${idCounter.toString(36)}`;
 }

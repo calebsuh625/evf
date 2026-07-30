@@ -13,8 +13,9 @@
  *   2. Recurring wall times — "Saturdays, 9:00am, in Shanghai". These are
  *      NOT instants and must not be stored as UTC: 9am Shanghai is a
  *      different UTC time depending on whether the *other* side is in DST.
- *      Stored as { day, start, end, tz } and resolved to instants against a
- *      reference week.
+ *      Stored as the `availability` table's row shape
+ *      { weekday, startTime, endTime, timezone } and resolved to instants
+ *      against a reference week.
  *
  * Weekday numbering is 0 = Sunday .. 6 = Saturday, matching Date#getUTCDay.
  */
@@ -193,16 +194,20 @@ export function weekAnchorUtcIso(instant) {
 }
 
 /**
- * Resolve a recurring availability slot to a concrete instant interval in the
+ * Resolve a recurring availability row to a concrete instant interval in the
  * week anchored at `weekAnchorIso`.
  *
- * @param {{day:number, start:string, end:string, tz:string}} slot
+ * The row is the `availability` table's shape: a weekday and a wall-clock
+ * range in a named zone. Deliberately NOT stored as UTC — see the module
+ * header for why.
+ *
+ * @param {{weekday:number, startTime:string, endTime:string, timezone:string}} slot
  * @param {string} weekAnchorIso from weekAnchorUtcIso()
  * @returns {{startMs:number, endMs:number, startIso:string, endIso:string}}
  */
 export function slotToInterval(slot, weekAnchorIso) {
   const anchor = new Date(weekAnchorIso);
-  const dateMs = anchor.getTime() + slot.day * MINUTES_PER_DAY * 60000;
+  const dateMs = anchor.getTime() + slot.weekday * MINUTES_PER_DAY * 60000;
   const date = new Date(dateMs);
 
   const wall = {
@@ -211,18 +216,18 @@ export function slotToInterval(slot, weekAnchorIso) {
     day: date.getUTCDate()
   };
 
-  const startMin = parseHhMm(slot.start);
-  const endMin = parseHhMm(slot.end);
+  const startMin = parseHhMm(slot.startTime);
+  const endMin = parseHhMm(slot.endTime);
 
   const startIso = wallTimeToUtcIso(
     { ...wall, hour: Math.floor(startMin / 60), minute: startMin % 60 },
-    slot.tz
+    slot.timezone
   );
   // An end before the start means the slot runs past local midnight.
   const spansMidnight = endMin <= startMin;
   const endIso = wallTimeToUtcIso(
     { ...wall, hour: Math.floor(endMin / 60), minute: endMin % 60 },
-    slot.tz
+    slot.timezone
   );
 
   const startMs = new Date(startIso).getTime();
@@ -250,8 +255,8 @@ const WEEK_SHIFTS = [-MINUTES_PER_WEEK * 60000, 0, MINUTES_PER_WEEK * 60000];
  * moment on two different calendar days. Each pair is also tested against
  * the adjacent weeks so matches across the week boundary are not lost.
  *
- * @param {Array<{day:number,start:string,end:string,tz:string}>} slotsA
- * @param {Array<{day:number,start:string,end:string,tz:string}>} slotsB
+ * @param {Array<{weekday:number,startTime:string,endTime:string,timezone:string}>} slotsA
+ * @param {Array<{weekday:number,startTime:string,endTime:string,timezone:string}>} slotsB
  * @param {string} referenceIso any instant in the week to evaluate
  * @returns {number} minutes
  */

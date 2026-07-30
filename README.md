@@ -7,9 +7,9 @@ It is a static site. There is no backend, no login, and no server holding
 children's names, schools, or guardian contacts. Everything runs in the browser,
 and the data lives in a JSON file the coordinator keeps.
 
-**Status:** Phase 1. The shell, routing, bilingual UI, data layer, and the pure
-logic modules (timezone math, pairing, hours) are built and tested. The
-individual screens are scaffolded and land next.
+**Status:** Phase 1. The shell, routing, bilingual UI, the full data layer, and
+the pure logic modules (timezone math, pairing, hours, CSV) are built and
+tested. The individual screens are scaffolded and land next.
 
 ## Running it
 
@@ -35,16 +35,16 @@ configuration — the paths resolve correctly under a project subpath.
 
 ## Tests
 
-Open <http://localhost:8000/tests/test.html>. 108 unit tests covering the
-timezone math, the pairing scorer, the hour computation, and the store's
-migration and export logic.
+Open <http://localhost:8000/tests/test.html>. 235 unit tests covering the
+timezone math, the pairing scorer, the hour computation, CSV handling, the
+bilingual dictionary, and the store's migration, validation and export logic.
 
 They also run headless, because the logic modules are deliberately free of DOM
 code:
 
 ```sh
 node -e "import('./tests/runner.js').then(async ({run}) => {
-  for (const f of ['time','matching','hours','store']) await import('./tests/'+f+'.test.js');
+  for (const f of ['time','matching','hours','csv','store','i18n']) await import('./tests/'+f+'.test.js');
   const r = await run(e => e.type==='fail' && console.log('FAIL', e.name, e.error));
   console.log(r); process.exit(r.failed ? 1 : 0);
 })"
@@ -57,11 +57,22 @@ cache so a half-finished session log survives a phone browser evicting the tab.
 
 - **Export** downloads everything as one readable, diffable JSON file.
 - **Import** replaces what is loaded. Files saved by older versions are migrated
-  forward automatically, so an old backup keeps opening.
+  forward automatically, so an old backup keeps opening. A malformed file is
+  refused with a list of exactly what is wrong, and nothing changes.
+- **Spreadsheets** import a roster from CSV and export any table as CSV. An
+  import adds and updates rows; it never deletes.
 - **Clear this browser** wipes the cache and leaves exported files untouched.
 
 Export regularly. That file is what makes the program survive any individual
 leaving.
+
+### The document
+
+One versioned JSON document with four tables: `people` (tutors and students
+together, with a `role`), `pairings`, `sessions`, and `availability`. Sessions
+belong to a pairing rather than to a tutor and student directly, because the
+pairing is the thing that persists over time. See [CLAUDE.md](CLAUDE.md) for the
+field-by-field shape and the reasoning.
 
 ## Time zones
 
@@ -83,8 +94,18 @@ Every conversion goes through `js/time.js`, and the DST cases have tests.
 
 ## Privacy
 
-`data/sample.json` is entirely invented and stays that way. Every name in it is
-a placeholder.
+`data/sample.json` is entirely invented and stays that way. Every name pairs an
+ordinary given name with a Greek-letter surname so it cannot be mistaken for a
+real person, and every address uses the reserved `example.org` domain.
+
+The dataset is deliberately awkward, because a demo that only shows the happy
+path teaches nothing: it includes 12 tutors, 20 students, 15 active pairings and
+three months of session history, plus a pairing that has gone quiet for over a
+month, five tutors at the maximum they set for themselves, a student no tutor
+can currently take, a pairing whose shared hour falls on different calendar days
+at each end, two students who fit the same single-slot tutor, a tutor in Arizona
+who never changes clocks, and students whose availability crosses local
+midnight.
 
 **Never commit real tutor or student data.** Real data belongs only in an export
 the coordinator keeps privately.
@@ -96,10 +117,11 @@ index.html          app shell and view container
 css/                styles, one file per area
 js/
   app.js            bootstrap, hash routing, view switching
-  store.js          load, save, import, export, migrate
+  store.js          data model, load, save, import, export, migrate
   time.js           timezone math      — pure functions, no DOM
   matching.js       pairing scorer     — pure functions, no DOM
   hours.js          hour computation   — pure functions, no DOM
+  csv.js            CSV parse/write    — pure functions, no DOM
   i18n.js           English / Simplified Chinese
   views/            one module per screen
 data/sample.json    committed demo dataset
@@ -107,7 +129,7 @@ tests/              browser test runner and unit tests
 CLAUDE.md           product principles and technical rules
 ```
 
-The three pure modules take their data as arguments and touch no globals, so if
+The four pure modules take their data as arguments and touch no globals, so if
 the program later moves to a real backend they port across unchanged.
 
 ## Design principles

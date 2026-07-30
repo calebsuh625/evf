@@ -6,27 +6,57 @@
  * Principle 2 lives here. Nobody logs hours. Tutors log that a session
  * happened, because knowing what happened is useful to them and to the
  * student. Hours are derived from those records afterwards. If a tutor never
- * looks at this screen, their hours are still correct.
+ * opens the Hours screen, their hours are still correct.
  *
- * Only sessions with status 'held' contribute. A canceled session is a
- * neutral fact about a calendar, not a mark against anyone (principle 3),
- * so it is counted separately and never subtracted from anything.
+ * Two totals, because they answer different questions:
+ *
+ *   contactMinutes    time spent with the student (durationMinutes)
+ *   volunteerMinutes  contact + prep + follow-up
+ *
+ * A school service-hours form is asking for volunteered time, so
+ * volunteerMinutes is the headline figure. Prep and follow-up are real
+ * donated work and a tutor who writes lesson notes on Friday night should
+ * not have to argue for them. contactMinutes is kept alongside for anyone
+ * who needs to report contact time specifically.
+ *
+ * Sessions with `occurred: false` contribute nothing and are counted
+ * separately. A session that did not happen is a neutral fact about a
+ * calendar, never subtracted from anything and never shown as a demerit
+ * (principle 3).
+ *
+ * Sessions reference a pairing, not a tutor. Every function that scopes by
+ * person therefore takes the pairings table too.
  */
 
 import { monthKeyInZone, dateKeyInZone } from './time.js';
 
-/** Statuses that represent time actually spent tutoring. */
-export const COUNTED_STATUSES = Object.freeze(['held']);
-
 /** Granularity for reported totals. Most hour forms want quarter hours. */
 export const ROUNDING_MINUTES = 15;
 
-/** Minutes a session contributes. Anything unheld or malformed contributes 0. */
-export function sessionMinutes(session) {
-  if (!session || !COUNTED_STATUSES.includes(session.status)) return 0;
-  const minutes = Number(session.durationMinutes);
-  if (!Number.isFinite(minutes) || minutes <= 0) return 0;
-  return Math.round(minutes);
+/** Map pairing id -> pairing, for resolving a session to its people. */
+export function indexPairings(pairings) {
+  return new Map((pairings ?? []).map((p) => [p.id, p]));
+}
+
+function minutesField(value) {
+  const num = Number(value);
+  return Number.isFinite(num) && num > 0 ? Math.round(num) : 0;
+}
+
+/** Time spent with the student. Zero unless the session occurred. */
+export function sessionContactMinutes(session) {
+  if (!session || session.occurred !== true) return 0;
+  return minutesField(session.durationMinutes);
+}
+
+/** Contact + prep + follow-up. Zero unless the session occurred. */
+export function sessionVolunteerMinutes(session) {
+  if (!session || session.occurred !== true) return 0;
+  return (
+    minutesField(session.durationMinutes) +
+    minutesField(session.prepMinutes) +
+    minutesField(session.followupMinutes)
+  );
 }
 
 /** Minutes to hours, rounded to the nearest quarter hour. */
@@ -41,138 +71,196 @@ export function formatHours(hours) {
 }
 
 function inRange(iso, fromIso, toIso) {
+  if (!iso) return false;
   if (fromIso && iso < fromIso) return false;
   if (toIso && iso >= toIso) return false;
   return true;
 }
 
 /**
- * Filter sessions by tutor, student, and half-open instant range.
+ * Filter sessions by person, pairing, and half-open instant range.
  *
  * @param {object[]} sessions
- * @param {{tutorId?:string, studentId?:string, fromIso?:string, toIso?:string,
- *          status?:string}} [filter]
+ * @param {object[]} pairings
+ * @param {{tutorId?:string, studentId?:string, pairingId?:string,
+ *          fromIso?:string, toIso?:string, occurredOnly?:boolean}} [filter]
  */
-export function filterSessions(sessions, filter = {}) {
-  const { tutorId, studentId, fromIso, toIso, status } = filter;
+export function filterSessions(sessions, pairings, filter = {}) {
+  const { tutorId, studentId, pairingId, fromIso, toIso, occurredOnly } = filter;
+  const index = indexPairings(pairings);
+
   return (sessions ?? []).filter((s) => {
-    if (tutorId && s.tutorId !== tutorId) return false;
-    if (studentId && s.studentId !== studentId) return false;
-    if (status && s.status !== status) return false;
-    return inRange(s.startsAt, fromIso, toIso);
+    if (pairingId && s.pairingId !== pairingId) return false;
+    if (occurredOnly && s.occurred !== true) return false;
+
+    if (tutorId || studentId) {
+      const pairing = index.get(s.pairingId);
+      // A session whose pairing is missing cannot be attributed to anyone.
+      // It is excluded from person-scoped queries rather than guessed at.
+      if (!pairing) return false;
+      if (tutorId && pairing.tutorId !== tutorId) return false;
+      if (studentId && pairing.studentId !== studentId) return false;
+    }
+
+    return inRange(s.scheduledAt, fromIso, toIso);
   });
 }
 
+/** The tutor and student behind a session, or nulls if the pairing is gone. */
+export function peopleForSession(session, pairings) {
+  const pairing = indexPairings(pairings).get(session?.pairingId);
+  return { tutorId: pairing?.tutorId ?? null, studentId: pairing?.studentId ?? null, pairing: pairing ?? null };
+}
+
 /**
- * One tutor's totals. The number a school hour form asks for is `hours`.
+ * Totals for whatever the filter selects. The number a school hour form asks
+ * for is `volunteerHours`.
  *
  * @returns {{
- *   tutorId: string|null, heldCount: number, canceledCount: number,
- *   minutes: number, hours: number, hoursLabel: string,
- *   firstSessionIso: string|null, lastSessionIso: string|null,
- *   studentIds: string[]
+ *   occurredCount:number, missedCount:number,
+ *   contactMinutes:number, volunteerMinutes:number,
+ *   contactHours:number, volunteerHours:number,
+ *   hoursLabel:string, contactHoursLabel:string,
+ *   prepMinutes:number, followupMinutes:number,
+ *   firstSessionIso:string|null, lastSessionIso:string|null,
+ *   studentIds:string[], pairingIds:string[]
  * }}
  */
-export function computeHours(sessions, filter = {}) {
-  const scoped = filterSessions(sessions, { ...filter, status: undefined });
+export function computeHours(sessions, pairings, filter = {}) {
+  const scoped = filterSessions(sessions, pairings, { ...filter, occurredOnly: false });
+  const index = indexPairings(pairings);
 
-  let minutes = 0;
-  let heldCount = 0;
-  let canceledCount = 0;
+  let contactMinutes = 0;
+  let volunteerMinutes = 0;
+  let prepMinutes = 0;
+  let followupMinutes = 0;
+  let occurredCount = 0;
+  let missedCount = 0;
   let firstSessionIso = null;
   let lastSessionIso = null;
   const studentIds = new Set();
+  const pairingIds = new Set();
 
   for (const s of scoped) {
-    const m = sessionMinutes(s);
-    if (m > 0) {
-      minutes += m;
-      heldCount += 1;
-      if (!firstSessionIso || s.startsAt < firstSessionIso) firstSessionIso = s.startsAt;
-      if (!lastSessionIso || s.startsAt > lastSessionIso) lastSessionIso = s.startsAt;
-      if (s.studentId) studentIds.add(s.studentId);
-    } else if (s.status === 'canceled') {
-      canceledCount += 1;
-    }
+    if (s.occurred !== true) { missedCount += 1; continue; }
+
+    const contact = sessionContactMinutes(s);
+    contactMinutes += contact;
+    volunteerMinutes += sessionVolunteerMinutes(s);
+    prepMinutes += minutesField(s.prepMinutes);
+    followupMinutes += minutesField(s.followupMinutes);
+    occurredCount += 1;
+
+    if (!firstSessionIso || s.scheduledAt < firstSessionIso) firstSessionIso = s.scheduledAt;
+    if (!lastSessionIso || s.scheduledAt > lastSessionIso) lastSessionIso = s.scheduledAt;
+
+    pairingIds.add(s.pairingId);
+    const studentId = index.get(s.pairingId)?.studentId;
+    if (studentId) studentIds.add(studentId);
   }
 
-  const hours = toRoundedHours(minutes);
+  const volunteerHours = toRoundedHours(volunteerMinutes);
+  const contactHours = toRoundedHours(contactMinutes);
+
   return {
-    tutorId: filter.tutorId ?? null,
-    heldCount,
-    canceledCount,
-    minutes,
-    hours,
-    hoursLabel: formatHours(hours),
+    occurredCount,
+    missedCount,
+    contactMinutes,
+    volunteerMinutes,
+    contactHours,
+    volunteerHours,
+    hoursLabel: formatHours(volunteerHours),
+    contactHoursLabel: formatHours(contactHours),
+    prepMinutes,
+    followupMinutes,
     firstSessionIso,
     lastSessionIso,
-    studentIds: [...studentIds].sort()
+    studentIds: [...studentIds].sort(),
+    pairingIds: [...pairingIds].sort()
   };
 }
 
 /**
- * Per-tutor totals, highest first. Tutors with zero held sessions are
- * included with zeros — an empty row is information, and leaving people off
- * a list is how a program loses track of who volunteered.
+ * Per-tutor totals, highest first. Tutors with no sessions are included with
+ * zeros — an empty row is information, and leaving people off a list is how a
+ * program loses track of who volunteered.
  *
  * @param {object[]} sessions
- * @param {object[]} tutors
+ * @param {object[]} pairings
+ * @param {object[]} tutors people with role 'tutor'
  * @param {{fromIso?:string, toIso?:string}} [range]
  */
-export function summarizeByTutor(sessions, tutors, range = {}) {
+export function summarizeByTutor(sessions, pairings, tutors, range = {}) {
   return (tutors ?? [])
     .map((tutor) => ({
       tutorId: tutor.id,
-      displayName: tutor.displayName ?? tutor.id,
-      ...computeHours(sessions, { ...range, tutorId: tutor.id })
+      name: tutor.preferredName || tutor.name || tutor.id,
+      ...computeHours(sessions, pairings, { ...range, tutorId: tutor.id })
     }))
-    .sort((a, b) => b.minutes - a.minutes || a.displayName.localeCompare(b.displayName));
+    .sort((a, b) => b.volunteerMinutes - a.volunteerMinutes || a.name.localeCompare(b.name));
+}
+
+/** Per-student totals, most tutored first. */
+export function summarizeByStudent(sessions, pairings, students, range = {}) {
+  return (students ?? [])
+    .map((student) => ({
+      studentId: student.id,
+      name: student.preferredName || student.name || student.id,
+      ...computeHours(sessions, pairings, { ...range, studentId: student.id })
+    }))
+    .sort((a, b) => b.contactMinutes - a.contactMinutes || a.name.localeCompare(b.name));
 }
 
 /**
  * Monthly buckets, oldest first. Months with no sessions are omitted rather
- * than zero-filled; callers that want a continuous axis can fill gaps.
+ * than zero-filled; callers wanting a continuous axis can fill the gaps.
  *
  * @param {object[]} sessions
- * @param {{tz: string, tutorId?: string}} opts month boundaries are decided
- *        in `tz` — a session at 22:00 Mar 31 in New York is a March session
- *        for a US tutor's form, even though it is April 1 in UTC.
+ * @param {object[]} pairings
+ * @param {{tz:string, tutorId?:string, studentId?:string}} opts month
+ *        boundaries are decided in `tz` — a session at 22:00 on Mar 31 in New
+ *        York is a March session on a US tutor's form even though it is
+ *        April 1 in UTC.
  */
-export function hoursByMonth(sessions, opts) {
-  const { tz, tutorId } = opts ?? {};
+export function hoursByMonth(sessions, pairings, opts) {
+  const { tz, tutorId, studentId } = opts ?? {};
   if (!tz) throw new TypeError('hoursByMonth requires opts.tz');
 
   const buckets = new Map();
-  for (const s of filterSessions(sessions, { tutorId })) {
-    const m = sessionMinutes(s);
-    if (m === 0) continue;
-    const key = monthKeyInZone(s.startsAt, tz);
-    const bucket = buckets.get(key) ?? { month: key, minutes: 0, heldCount: 0 };
-    bucket.minutes += m;
-    bucket.heldCount += 1;
+  for (const s of filterSessions(sessions, pairings, { tutorId, studentId })) {
+    const minutes = sessionVolunteerMinutes(s);
+    if (minutes === 0) continue;
+    const key = monthKeyInZone(s.scheduledAt, tz);
+    const bucket = buckets.get(key) ?? { month: key, volunteerMinutes: 0, contactMinutes: 0, occurredCount: 0 };
+    bucket.volunteerMinutes += minutes;
+    bucket.contactMinutes += sessionContactMinutes(s);
+    bucket.occurredCount += 1;
     buckets.set(key, bucket);
   }
 
   return [...buckets.values()]
-    .map((b) => ({ ...b, hours: toRoundedHours(b.minutes), hoursLabel: formatHours(toRoundedHours(b.minutes)) }))
+    .map((b) => ({
+      ...b,
+      volunteerHours: toRoundedHours(b.volunteerMinutes),
+      hoursLabel: formatHours(toRoundedHours(b.volunteerMinutes))
+    }))
     .sort((a, b) => a.month.localeCompare(b.month));
 }
 
 /**
- * Weekly streak of consecutive weeks with at least one held session, ending
- * at the most recent session.
+ * Distinct weeks containing at least one session that happened.
  *
- * Reported, never enforced. There is no screen that says a streak was
- * broken, and nothing anywhere consumes a zero here (principle 3).
+ * Reported, never enforced. Nothing anywhere consumes a low number here, and
+ * there is no screen that tells someone a streak was broken (principle 3).
  */
-export function activeWeeks(sessions, opts) {
+export function activeWeeks(sessions, pairings, opts) {
   const { tz, tutorId } = opts ?? {};
   if (!tz) throw new TypeError('activeWeeks requires opts.tz');
 
   const weeks = new Set();
-  for (const s of filterSessions(sessions, { tutorId })) {
-    if (sessionMinutes(s) === 0) continue;
-    weeks.add(weekKey(s.startsAt, tz));
+  for (const s of filterSessions(sessions, pairings, { tutorId })) {
+    if (sessionVolunteerMinutes(s) === 0) continue;
+    weeks.add(weekKey(s.scheduledAt, tz));
   }
   return weeks.size;
 }
@@ -186,30 +274,89 @@ function weekKey(iso, tz) {
 }
 
 /**
+ * Active pairings whose most recent session that actually happened is older
+ * than `weeks`, oldest first.
+ *
+ * This is a support tool, not an enforcement one. A pairing goes quiet
+ * because of exam season, a family trip, or a tutor who needs someone to ask
+ * whether they are stuck — and the coordinator can only help if they can see
+ * it. Nothing here penalises anybody, no count is stored against a person,
+ * and a quiet pairing is never surfaced to the tutor as a warning.
+ *
+ * @param {object[]} sessions
+ * @param {object[]} pairings
+ * @param {{asOfIso: string, weeks?: number}} opts asOfIso is required rather
+ *        than defaulted to now, so this is testable and so a report run over
+ *        a historical window gives the same answer every time.
+ * @returns {Array<{pairingId:string, tutorId:string, studentId:string,
+ *                  lastSessionIso:string|null, daysSince:number|null}>}
+ */
+export function pairingsNeedingCheckIn(sessions, pairings, opts) {
+  const { asOfIso, weeks = 4 } = opts ?? {};
+  if (!asOfIso) throw new TypeError('pairingsNeedingCheckIn requires opts.asOfIso');
+
+  const asOfMs = new Date(asOfIso).getTime();
+  const cutoffMs = asOfMs - weeks * 7 * 86400000;
+
+  const lastByPairing = new Map();
+  for (const s of sessions ?? []) {
+    if (s.occurred !== true || !s.scheduledAt) continue;
+    if (s.scheduledAt > asOfIso) continue; // ignore anything in the future
+    const current = lastByPairing.get(s.pairingId);
+    if (!current || s.scheduledAt > current) lastByPairing.set(s.pairingId, s.scheduledAt);
+  }
+
+  return (pairings ?? [])
+    .filter((p) => p.status === 'active')
+    .map((p) => {
+      const lastSessionIso = lastByPairing.get(p.id) ?? null;
+      return {
+        pairingId: p.id,
+        tutorId: p.tutorId,
+        studentId: p.studentId,
+        lastSessionIso,
+        daysSince: lastSessionIso
+          ? Math.floor((asOfMs - new Date(lastSessionIso).getTime()) / 86400000)
+          : null
+      };
+    })
+    .filter((row) => row.lastSessionIso === null || new Date(row.lastSessionIso).getTime() < cutoffMs)
+    .sort((a, b) => {
+      // Never-met pairings first, then longest quiet.
+      if (a.lastSessionIso === null && b.lastSessionIso !== null) return -1;
+      if (b.lastSessionIso === null && a.lastSessionIso !== null) return 1;
+      return String(a.lastSessionIso).localeCompare(String(b.lastSessionIso));
+    });
+}
+
+/**
  * Program-wide roll-up for the admin screen. Every figure here is derived
  * from tutors logging sessions for their own reasons.
  */
-export function programTotals(sessions, tutors, students, range = {}) {
-  const overall = computeHours(sessions, range);
-  const perTutor = summarizeByTutor(sessions, tutors, range);
-  const activeTutors = perTutor.filter((t) => t.heldCount > 0).length;
+export function programTotals(sessions, pairings, people, range = {}) {
+  const tutors = (people ?? []).filter((p) => p.role === 'tutor');
+  const students = (people ?? []).filter((p) => p.role === 'student');
 
-  const studentsReached = new Set();
-  for (const s of filterSessions(sessions, range)) {
-    if (sessionMinutes(s) > 0 && s.studentId) studentsReached.add(s.studentId);
-  }
+  const overall = computeHours(sessions, pairings, range);
+  const perTutor = summarizeByTutor(sessions, pairings, tutors, range);
+  const activeTutors = perTutor.filter((t) => t.occurredCount > 0).length;
 
   return {
-    heldCount: overall.heldCount,
-    canceledCount: overall.canceledCount,
-    minutes: overall.minutes,
-    hours: overall.hours,
+    occurredCount: overall.occurredCount,
+    missedCount: overall.missedCount,
+    contactMinutes: overall.contactMinutes,
+    volunteerMinutes: overall.volunteerMinutes,
+    contactHours: overall.contactHours,
+    volunteerHours: overall.volunteerHours,
     hoursLabel: overall.hoursLabel,
+    prepMinutes: overall.prepMinutes,
+    followupMinutes: overall.followupMinutes,
     activeTutors,
-    rosteredTutors: (tutors ?? []).length,
-    studentsReached: studentsReached.size,
-    rosteredStudents: (students ?? []).length,
-    medianHoursPerTutor: median(perTutor.filter((t) => t.heldCount > 0).map((t) => t.hours))
+    rosteredTutors: tutors.length,
+    studentsReached: overall.studentIds.length,
+    rosteredStudents: students.length,
+    activePairings: (pairings ?? []).filter((p) => p.status === 'active').length,
+    medianHoursPerTutor: median(perTutor.filter((t) => t.occurredCount > 0).map((t) => t.volunteerHours))
   };
 }
 

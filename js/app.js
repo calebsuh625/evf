@@ -2,8 +2,8 @@
  * app.js — bootstrap, hash routing, view switching.
  *
  * Hash routing rather than History API: GitHub Pages serves static files and
- * has no rewrite rules, so /matches would 404 on a hard refresh while
- * #/matches always resolves to index.html.
+ * has no rewrite rules, so /pairings would 404 on a hard refresh while
+ * #/pairings always resolves to index.html.
  */
 
 import * as store from './store.js';
@@ -13,7 +13,7 @@ import { el, clear, toast } from './dom.js';
 import { render as renderHome } from './views/home.js';
 import { render as renderTutors } from './views/tutors.js';
 import { render as renderStudents } from './views/students.js';
-import { render as renderMatches } from './views/matches.js';
+import { render as renderPairings } from './views/pairings.js';
 import { render as renderLogSession } from './views/log-session.js';
 import { render as renderSessions } from './views/sessions.js';
 import { render as renderHours } from './views/hours.js';
@@ -28,7 +28,7 @@ const ROUTES = [
   { path: '/',         key: 'nav.home',     nav: true,  render: renderHome },
   { path: '/tutors',   key: 'nav.tutors',   nav: true,  render: renderTutors },
   { path: '/students', key: 'nav.students', nav: true,  render: renderStudents },
-  { path: '/matches',  key: 'nav.matches',  nav: true,  render: renderMatches },
+  { path: '/pairings', key: 'nav.pairings', nav: true,  render: renderPairings },
   { path: '/log',      key: 'nav.log',      nav: true,  render: renderLogSession },
   { path: '/sessions', key: 'nav.sessions', nav: true,  render: renderSessions },
   { path: '/hours',    key: 'nav.hours',    nav: true,  render: renderHours },
@@ -42,7 +42,7 @@ const NOT_FOUND = { path: null, key: 'notfound.title', render: renderNotFound };
  * Routing
  * ------------------------------------------------------------------ */
 
-/** "#/matches?x=1" -> { path: "/matches", params: URLSearchParams } */
+/** "#/pairings?x=1" -> { path: "/pairings", params: URLSearchParams } */
 export function parseHash(hash) {
   const raw = String(hash ?? '').replace(/^#/, '');
   const [pathPart, queryPart = ''] = raw.split('?');
@@ -144,7 +144,7 @@ function boot() {
   applyStaticStrings();
   wireLangToggle();
 
-  const cache = store.loadFromCache();
+  const cache = store.load();
   if (cache.error) {
     console.warn('[app] cache did not load:', cache.error);
   }
@@ -166,9 +166,9 @@ function boot() {
   }
 
   // Flush the debounced cache write if the tab goes away mid-edit.
-  window.addEventListener('pagehide', () => store.persistNow());
+  window.addEventListener('pagehide', () => store.saveNow());
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') store.persistNow();
+    if (document.visibilityState === 'hidden') store.saveNow();
   });
 }
 

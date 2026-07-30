@@ -47,7 +47,8 @@
   <h1>Unit tests</h1>
   <p class="note">
     Pure-logic tests for <code>time.js</code>, <code>matching.js</code>,
-    <code>hours.js</code>, and the pure half of <code>store.js</code>.
+    <code>hours.js</code>, <code>csv.js</code>, <code>i18n.js</code>, and the
+    pure half of <code>store.js</code>.
     Must be served over HTTP — ES modules do not load from <code>file://</code>.
     &nbsp;<a href="../index.html">Back to the app</a>
   </p>
@@ -67,7 +68,9 @@ import { run } from './runner.js';
 await import('./time.test.js');
 await import('./matching.test.js');
 await import('./hours.test.js');
+await import('./csv.test.js');
 await import('./store.test.js');
+await import('./i18n.test.js');
 
 const results = document.getElementById('results');
 const summary = document.getElementById('summary');

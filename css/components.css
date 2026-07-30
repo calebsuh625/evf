@@ -208,4 +208,18 @@ textarea { min-height: 88px; resize: vertical; }
 }
 .file-drop:hover { background: var(--paper-3); color: var(--ink); }
 .file-drop[data-drag="true"] { border-color: var(--accent); background: var(--accent-soft); }
-.file-drop input { display: none; }
+
+/* A file input styled as a button or drop zone: the label is the control, so
+   the native "Choose File / No file chosen" widget must not also show. */
+.file-drop input[type="file"],
+.btn input[type="file"] { display: none; }
+
+select {
+  min-height: 44px;
+  padding: var(--sp-2) var(--sp-3);
+  font: inherit;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}

@@ -53,17 +53,66 @@ index.html          app shell, view container, file:// boot guard
 css/                base (reset + tokens) · layout (shell) · components · views
 js/
   app.js            bootstrap, hash routing, view switching
-  store.js          data layer: load, save, import, export, migrate
+  store.js          data model + data layer: load, save, import, export, migrate
   time.js           timezone math       — pure, no DOM
   matching.js       pairing scorer      — pure, no DOM
   hours.js          hour computation    — pure, no DOM
+  csv.js            CSV parse/serialise — pure, no DOM
   i18n.js           en / zh-Hans dictionary
   dom.js            small shared DOM helpers (not a framework — keep it small)
   views/            one module per screen, each exporting render(container, ctx)
 data/sample.json    committed demo dataset — synthetic only
 tests/test.html     browser test runner
-tests/*.test.js     unit tests for time, matching, hours, store
+tests/*.test.js     unit tests: time, matching, hours, csv, store, i18n
 ```
+
+## The data model
+
+One versioned JSON document. Current version is **2**.
+
+```
+{
+  version: 2,
+  program:      { name, adminTimeZone, studentTimeZone, defaultSessionMinutes, terms },
+  people:       [{ id, role: 'tutor'|'student', name, preferredName, email,
+                   wechat, timezone, locale, active, createdAt, ...roleFields }],
+  pairings:     [{ id, tutorId, studentId, status: 'active'|'paused'|'ended',
+                   startedAt, endedAt, notes }],
+  sessions:     [{ id, pairingId, scheduledAt, occurred, durationMinutes,
+                   prepMinutes, followupMinutes, covered, homework, loggedAt }],
+  availability: [{ personId, weekday, startTime, endTime, timezone }]
+}
+```
+
+Tutor fields: `school`, `grade`, `subjects[]`, `levelsComfortable[]`,
+`maxStudents`, `bio`, `meetingLink`.
+
+Student fields: `grade`, `englishLevel`, `goals[]`, `interests[]`,
+`guardianName`, `guardianWechat`, `guardianEmail`.
+
+Three shape decisions worth not re-litigating:
+
+**Tutors and students are one table with a `role` discriminator.** They share
+most fields, every "people" screen wants both, and a tutor who later helps
+coordinate should not need a second row.
+
+**Sessions hang off `pairingId`, never off a tutor and student directly.** The
+pairing is the thing that persists; a session is one instance of it. So
+resolving a session to its people goes through the pairing, which is why
+`hours.js` takes the pairings table as an argument. Denormalising a `tutorId`
+back onto sessions would create two sources of truth that can disagree.
+
+**Availability is its own table.** It is queried by time far more than
+per-person, rows come and go independently of the person, and a nested array
+makes bulk CSV import awkward.
+
+**A student's `goals` are a tutor's `subjects`.** The matcher intersects those
+two fields. They are named differently because they mean different things from
+each side; do not "fix" this by renaming one.
+
+**`occurred` is a boolean, not a status string.** Did it happen, yes or no.
+There is deliberately no "no-show", no attendance grade, and no required
+reason field — see principle 3.
 
 ## Running it
 
@@ -81,7 +130,7 @@ Tests: open `tests/test.html` over the same server. They also run headless:
 
 ```
 node -e "import('./tests/runner.js').then(async ({run}) => {
-  for (const f of ['time','matching','hours','store']) await import('./tests/'+f+'.test.js');
+  for (const f of ['time','matching','hours','csv','store','i18n']) await import('./tests/'+f+'.test.js');
   const r = await run(e => e.type==='fail' && console.log('FAIL', e.name, e.error));
   console.log(r); process.exit(r.failed ? 1 : 0);
 })"
@@ -94,12 +143,16 @@ DOM-free — see the first technical rule.
 
 **Two kinds of time, and they are not the same.** Instants (a session happened)
 are ISO 8601 UTC strings. Recurring wall times (a tutor is free Saturdays at
-9am) are `{ day, start, end, tz }` and must NOT be stored as UTC — 9am Shanghai
-is a different UTC time depending on whether the US side is in DST. `time.js`
-resolves the second kind into the first against a reference week. Read the
-header comment there before touching any of it.
+9am) are `{ weekday, startTime, endTime, timezone }` and must NOT be stored as
+UTC — 9am Shanghai is a different UTC time depending on whether the US side is
+in DST. `time.js` resolves the second kind into the first against a reference
+week. Read the header comment there before touching any of it.
 
 **Weekday numbering is 0 = Sunday**, matching `Date#getUTCDay`.
+
+**Availability rows are `{ weekday, startTime, endTime, timezone }`** — a wall
+clock plus a zone, never normalised to UTC. `startTime` after `endTime` means
+the window crosses local midnight, which real students do use.
 
 **The availability week wraps.** A tutor's Saturday evening in New York is a
 Sunday morning in Shanghai, which is a different day *and* a different week
@@ -118,18 +171,51 @@ text a student's parent cannot read.
 typed by a volunteer on a phone and rendered on a coordinator's screen. Keep
 that path incapable of producing markup.
 
-**Session status is `held` | `canceled`.** A cancellation is a neutral fact
-about a calendar. It is counted separately and never subtracted from anything.
-Do not add a "no-show", an attendance grade, or a required reason field — see
-principle 3.
+**A session that did not happen is a neutral fact about a calendar.** It is
+counted separately and never subtracted from anything. Do not add a "no-show",
+an attendance grade, or a required reason field — see principle 3.
 
-**Only `held` sessions contribute hours.** Hours are derived in `hours.js` from
-session records. Nobody types an hour figure. If a tutor never opens the Hours
-screen, their hours are still correct.
+**`pairingsNeedingCheckIn()` is a support tool, not an enforcement one.** It
+surfaces pairings that have gone quiet so a coordinator can ask whether someone
+is stuck. It takes an explicit `asOfIso` so the answer is reproducible, stores
+no count against any person, and must never be shown to a tutor as a warning.
+
+**Only sessions with `occurred === true` contribute hours.** Hours are derived
+in `hours.js` from session records. Nobody types an hour figure. If a tutor
+never opens the Hours screen, their hours are still correct.
+
+**Two hour totals, deliberately.** `contactMinutes` is time with the student;
+`volunteerMinutes` adds prep and follow-up. A school service-hours form is
+asking for volunteered time, so `volunteerMinutes` is the headline — a tutor who
+writes lesson notes on Friday night should not have to argue for them.
 
 **Month boundaries for hours are decided in the tutor's own time zone.** A
 session at 9pm on March 31 in New York is April 1 in UTC and a March session on
 a US hour form.
+
+## The store API
+
+```
+load() save() reset()                   localStorage cache (save is debounced)
+exportJson() importJson(file)           the real save mechanism
+exportCsv(type) importCsv(file, type)   spreadsheets; type is one of CSV_TYPES
+migrate(data) validate(data)            called on every load and import
+parseProgramJson(text)                  parse + validate without touching state
+parseCsvText(type, text)                same, for CSV
+toJson(data) toCsvText(type, data)      serialise without downloading
+
+activePairingsFor(personId)   sessionsFor(pairingId)
+unpairedStudents()            tutorsWithCapacity()
+tutors() students() personById() availabilityFor() sessionsForPerson()
+summary()                     counts for the dashboard, in one pass
+```
+
+Every query helper takes an optional trailing `data` argument defaulting to live
+state, so views call `store.summary()` and tests call `store.summary(fixture)`.
+
+`unpairedStudents()` counts a **paused** pairing as unpaired: somebody has to
+pick it back up. `tutorsWithCapacity()` respects each tutor's own `maxStudents`
+as a limit they set for themselves, not a target to fill.
 
 ## Adding a screen
 
@@ -150,6 +236,44 @@ Routing is hash-based (`#/matches`) because GitHub Pages has no rewrite rules �
 
 Old exports must keep opening. A coordinator's backup from last spring is the
 program's memory.
+
+Existing migrations: `0 → 1` (the pre-versioned prototype: loose top-level
+settings, `endsAt` instead of `durationMinutes`) and `1 → 2` (split
+`tutors`/`students` into `people`; `matches` → `pairings`; availability lifted
+out of the person; sessions moved to `pairingId` and `occurred`). Version is
+read from `version`, falling back to v1's `schemaVersion`, falling back to 0.
+
+## Import must never half-apply
+
+`validate()` separates two kinds of problem, and the distinction is the whole
+design:
+
+- **errors** — bad types, duplicate ids, references to records that are not in
+  the file. The import is refused outright with every problem listed, and live
+  state is untouched. A half-applied import is worse than a rejected one.
+- **warnings** — a tutor with no availability, an unrecognised English level, a
+  missing name. These pass through and get surfaced. A coordinator hand-editing
+  JSON at 11pm should get their data back plus a list of what looks off.
+
+`parseProgramJson()` and `parseCsvText()` do the work without touching state;
+`importJson()` and `importCsv()` wrap them and only then commit. Tests use the
+former, which is why `tests/store.test.js` never risks the real localStorage key.
+
+## CSV
+
+`importCsv(file, type)` merges: new rows by id are added, existing rows are
+updated, **nothing is ever deleted by an import.**
+
+The subtle part: `parseCsvText()` returns fully-defaulted records so a genuinely
+new row is complete, *and* a `providedColumns` list of what the file actually
+contained. A merge must patch only the provided columns. Spreading a defaulted
+record over an existing person would blank the fields the CSV never mentioned —
+that bug silently reset join dates and subject lists before it was caught, and
+there is a test pinning it now.
+
+Availability has no id, so a CSV import replaces every row for the people named
+in the file. Appending would silently double a person's availability on a
+re-import.
 
 ## Privacy
 

@@ -24,7 +24,7 @@ const STRINGS = {
     'nav.home': 'Home',
     'nav.tutors': 'Tutors',
     'nav.students': 'Students',
-    'nav.matches': 'Matches',
+    'nav.pairings': 'Pairings',
     'nav.log': 'Log a session',
     'nav.sessions': 'Sessions',
     'nav.hours': 'Hours',
@@ -43,7 +43,7 @@ const STRINGS = {
     'home.zone.students': 'Students',
     'home.stat.tutors': 'Tutors',
     'home.stat.students': 'Students',
-    'home.stat.matches': 'Active matches',
+    'home.stat.pairings': 'Active pairings',
     'home.stat.hours': 'Hours tutored',
     'home.next': 'What to do next',
 
@@ -51,8 +51,8 @@ const STRINGS = {
     'tutors.lede': 'US high school volunteers, their weekend availability, and what they can teach.',
     'students.title': 'Students',
     'students.lede': 'Students in mainland China. Nothing on this screen is required of a student or a guardian.',
-    'matches.title': 'Matches',
-    'matches.lede': 'Suggested and confirmed tutor/student pairings, scored on shared time, subject, and language.',
+    'pairings.title': 'Pairings',
+    'pairings.lede': 'Suggested and confirmed tutor/student pairings, scored on shared time, subject, level, and language.',
     'log.title': 'Log a session',
     'log.lede': 'Under twenty seconds on a phone. Pick the pair, confirm the length, done.',
     'sessions.title': 'Sessions',
@@ -84,6 +84,18 @@ const STRINGS = {
     'data.reset.confirm': 'Clear all data from this browser? Anything not exported is gone.',
     'data.peek': 'Preview of the export',
 
+    'data.csv.title': 'Spreadsheets',
+    'data.csv.body': 'Import a roster from a spreadsheet, or export any table as CSV. Column names match the JSON field names.',
+    'data.csv.export': 'Export CSV',
+    'data.csv.import': 'Import CSV',
+    'data.csv.table': 'Table',
+    'data.csv.importHint': 'Adds new rows and updates existing ones by id. Nothing is ever deleted by an import.',
+    'data.status.pairings': 'Pairings (active)',
+    'data.status.availability': 'Availability rows',
+    'data.status.unpaired': 'Students waiting',
+    'data.status.capacity': 'Tutors with room',
+
+    'toast.csvImported': 'Added {added}, updated {updated}.',
     'toast.sampleLoaded': 'Sample data loaded.',
     'toast.imported': 'Imported {count} records.',
     'toast.exported': 'Saved {name}',
@@ -116,7 +128,7 @@ const STRINGS = {
     'nav.home': '首页',
     'nav.tutors': '辅导员',
     'nav.students': '学生',
-    'nav.matches': '配对',
+    'nav.pairings': '配对',
     'nav.log': '记录课程',
     'nav.sessions': '课程记录',
     'nav.hours': '志愿时长',
@@ -135,7 +147,7 @@ const STRINGS = {
     'home.zone.students': '学生时间',
     'home.stat.tutors': '辅导员',
     'home.stat.students': '学生',
-    'home.stat.matches': '进行中的配对',
+    'home.stat.pairings': '进行中的配对',
     'home.stat.hours': '累计辅导时长',
     'home.next': '下一步',
 
@@ -143,8 +155,8 @@ const STRINGS = {
     'tutors.lede': '美国高中志愿者、他们的周末可用时间，以及可教授的科目。',
     'students.title': '学生',
     'students.lede': '中国大陆的学生。本页面不要求学生或家长填写任何内容。',
-    'matches.title': '配对',
-    'matches.lede': '建议与已确认的辅导员／学生配对，依据共同时间、科目与语言评分。',
+    'pairings.title': '配对',
+    'pairings.lede': '建议与已确认的辅导员／学生配对，依据共同时间、科目、水平与语言评分。',
     'log.title': '记录课程',
     'log.lede': '在手机上二十秒内完成：选择配对，确认时长，结束。',
     'sessions.title': '课程记录',
@@ -176,6 +188,18 @@ const STRINGS = {
     'data.reset.confirm': '确定清除此浏览器中的所有数据吗？未导出的内容将无法恢复。',
     'data.peek': '导出内容预览',
 
+    'data.csv.title': '表格文件',
+    'data.csv.body': '从电子表格导入名单，或将任意数据表导出为 CSV。列名与 JSON 字段名一致。',
+    'data.csv.export': '导出 CSV',
+    'data.csv.import': '导入 CSV',
+    'data.csv.table': '数据表',
+    'data.csv.importHint': '新增行并按 id 更新已有行。导入操作绝不会删除任何数据。',
+    'data.status.pairings': '配对（进行中）',
+    'data.status.availability': '可用时间条目',
+    'data.status.unpaired': '等待配对的学生',
+    'data.status.capacity': '仍有名额的辅导员',
+
+    'toast.csvImported': '新增 {added} 条，更新 {updated} 条。',
     'toast.sampleLoaded': '示例数据已载入。',
     'toast.imported': '已导入 {count} 条记录。',
     'toast.exported': '已保存 {name}',
@@ -227,7 +251,10 @@ export function setLang(lang) {
   if (!LANGS.includes(lang)) return current;
   current = lang;
   saveLangPreference(lang);
-  document.documentElement.lang = lang === 'zh' ? 'zh-Hans' : 'en';
+  // Guarded so the dictionaries can be checked outside a browser.
+  if (typeof document !== 'undefined') {
+    document.documentElement.lang = lang === 'zh' ? 'zh-Hans' : 'en';
+  }
   return current;
 }
 

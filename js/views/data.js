@@ -1,5 +1,5 @@
 /**
- * data.js — export, import, sample data, reset.
+ * data.js — export, import, sample data, spreadsheets, reset.
  *
  * The most important screen in the app. Principle 7: everything exports, so
  * the program survives any individual leaving. Everything else is a view over
@@ -18,6 +18,7 @@ export function render(container, { store }) {
     exportPanel(store, data),
     importPanel(store),
     samplePanel(store),
+    csvPanel(store),
     statusPanel(store, data),
     resetPanel(store)
   );
@@ -44,10 +45,7 @@ function exportPanel(store, data) {
     el('div', { class: 'row' },
       button(t('data.export.action'), {
         variant: 'primary',
-        onClick: () => {
-          const name = store.downloadJson();
-          toast(t('toast.exported', { name }));
-        }
+        onClick: () => toast(t('toast.exported', { name: store.exportJson() }))
       }),
       el('span', { class: 'small faint', text: store.suggestedFilename(data) })
     ),
@@ -79,17 +77,16 @@ function importPanel(store) {
     if (!file) return;
     clear(report);
     try {
-      const text = await store.readFileAsText(file);
-      const result = store.importJson(text);
+      const result = await store.importJson(file);
       const count =
-        result.data.tutors.length + result.data.students.length +
-        result.data.matches.length + result.data.sessions.length;
+        result.data.people.length + result.data.pairings.length +
+        result.data.sessions.length + result.data.availability.length;
 
       toast(t('toast.imported', { count }));
-      report.append(integrityReport(result));
+      report.append(importReport(result));
     } catch (err) {
-      toast(err.message, 'error');
-      report.append(el('p', { class: 'small', style: 'color:#8a1c1c', text: err.message }));
+      toast(err.message.split('\n')[0], 'error');
+      report.append(problemList(err.message));
     } finally {
       input.value = '';
     }
@@ -98,16 +95,10 @@ function importPanel(store) {
   input.addEventListener('change', () => ingest(input.files?.[0]));
 
   for (const type of ['dragenter', 'dragover']) {
-    drop.addEventListener(type, (e) => {
-      e.preventDefault();
-      drop.dataset.drag = 'true';
-    });
+    drop.addEventListener(type, (e) => { e.preventDefault(); drop.dataset.drag = 'true'; });
   }
   for (const type of ['dragleave', 'drop']) {
-    drop.addEventListener(type, (e) => {
-      e.preventDefault();
-      drop.dataset.drag = 'false';
-    });
+    drop.addEventListener(type, (e) => { e.preventDefault(); drop.dataset.drag = 'false'; });
   }
   drop.addEventListener('drop', (e) => ingest(e.dataTransfer?.files?.[0]));
 
@@ -115,31 +106,44 @@ function importPanel(store) {
 }
 
 /**
- * Migrations and integrity findings, surfaced rather than swallowed. An
- * import that quietly fixed things is an import a coordinator cannot trust.
+ * A rejected import explains itself in full. The message is multi-line by
+ * design — one bullet per problem — because "that file is malformed" is not
+ * something a coordinator can act on.
  */
-function integrityReport({ migrated, integrity }) {
+function problemList(message) {
+  const lines = message.split('\n').filter(Boolean);
+  return el('div', { class: 'stack--sm' },
+    lines.map((line, i) =>
+      el('p', {
+        class: i === 0 ? 'small' : 'small muted',
+        style: i === 0 ? 'color:#8a1c1c' : null,
+        text: line
+      })
+    )
+  );
+}
+
+/** Migrations and soft warnings, surfaced rather than swallowed. */
+function importReport({ migrated, warnings }) {
   const rows = [];
 
   if (migrated.length) {
     rows.push(el('p', { class: 'small' },
-      el('span', { class: 'badge badge--accent', text: t('toast.migrated', { from: migrated[0], to: 1 }) })
+      el('span', {
+        class: 'badge badge--accent',
+        text: t('toast.migrated', { from: migrated[0], to: 2 })
+      })
     ));
   }
 
-  for (const message of integrity.errors) {
-    rows.push(el('p', { class: 'small' },
-      el('span', { class: 'badge badge--warn', text: '!' }), ' ', message
-    ));
-  }
-  for (const message of integrity.warnings) {
+  for (const message of warnings ?? []) {
     rows.push(el('p', { class: 'small muted', text: message }));
   }
 
   if (!rows.length) {
     rows.push(el('p', { class: 'small' },
       el('span', { class: 'badge badge--good', text: 'OK' }), ' ',
-      'No integrity problems found.'
+      'No problems found.'
     ));
   }
 
@@ -154,7 +158,7 @@ function samplePanel(store) {
         await store.loadSampleData();
         toast(t('toast.sampleLoaded'));
       } catch (err) {
-        toast(err.message, 'error');
+        toast(err.message.split('\n')[0], 'error');
       } finally {
         load.disabled = false;
       }
@@ -164,19 +168,68 @@ function samplePanel(store) {
   return panel('data.sample.title', 'data.sample.body', el('div', { class: 'row' }, load));
 }
 
+/**
+ * Spreadsheet in, spreadsheet out. A roster arrives as a CSV far more often
+ * than as JSON, and a coordinator who wants to sort by availability in Excel
+ * should be able to.
+ */
+function csvPanel(store) {
+  const select = el('select', { 'aria-label': t('data.csv.table') },
+    store.CSV_TYPES.map((type) => el('option', { value: type, text: type }))
+  );
+
+  const input = el('input', { type: 'file', accept: 'text/csv,.csv' });
+  const report = el('div', { class: 'stack--sm' });
+
+  input.addEventListener('change', async () => {
+    const file = input.files?.[0];
+    if (!file) return;
+    clear(report);
+    try {
+      const result = await store.importCsv(file, select.value);
+      toast(t('toast.csvImported', { added: result.added, updated: result.updated }));
+      report.append(importReport({ migrated: [], warnings: result.warnings }));
+    } catch (err) {
+      toast(err.message.split('\n')[0], 'error');
+      report.append(problemList(err.message));
+    } finally {
+      input.value = '';
+    }
+  });
+
+  return panel('data.csv.title', 'data.csv.body',
+    el('div', { class: 'row' },
+      select,
+      button(t('data.csv.export'), {
+        onClick: () => toast(t('toast.exported', { name: store.exportCsv(select.value) }))
+      }),
+      el('label', { class: 'btn' },
+        t('data.csv.import'),
+        input
+      )
+    ),
+    el('p', { class: 'field__hint', text: t('data.csv.importHint') }),
+    report
+  );
+}
+
 function statusPanel(store, data) {
   const locale = getLocale();
+  const counts = store.summary(data);
   const total =
-    data.tutors.length + data.students.length + data.matches.length + data.sessions.length;
+    data.people.length + data.pairings.length + data.sessions.length + data.availability.length;
 
   return el('section', { class: 'card data-panel' },
     el('h2', { class: 'card__title', text: t('data.status.title') }),
     el('dl', { class: 'kv' },
-      row(t('nav.tutors'), data.tutors.length),
-      row(t('nav.students'), data.students.length),
-      row(t('nav.matches'), data.matches.length),
-      row(t('nav.sessions'), data.sessions.length),
-      row(t('data.status.schema'), String(data.schemaVersion)),
+      row(t('nav.tutors'), counts.tutors),
+      row(t('nav.students'), counts.students),
+      row(t('data.status.pairings'), `${counts.activePairings} / ${data.pairings.length}`),
+      row(t('nav.sessions'), `${counts.sessionsOccurred} / ${counts.sessions}`),
+      row(t('data.status.availability'), data.availability.length),
+      row(t('data.status.unpaired'), counts.unpairedStudents),
+      row(t('data.status.capacity'), counts.tutorsWithCapacity),
+      row(t('data.status.schema'), String(data.version)),
       row(t('data.status.cache'), `${(store.cacheSizeBytes() / 1024).toFixed(1)} KB`),
       row(
         t('data.status.exported'),
@@ -206,7 +259,7 @@ function resetPanel(store) {
           variant: 'danger',
           onClick: () => {
             if (!confirm(t('data.reset.confirm'))) return;
-            store.resetAll();
+            store.reset();
             toast(t('toast.cleared'));
           }
         })

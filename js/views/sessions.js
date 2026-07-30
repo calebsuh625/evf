@@ -3,8 +3,7 @@ import { t } from '../i18n.js';
 import { placeholder } from './placeholder.js';
 
 export function render(container, { store }) {
-  const data = store.getState();
-  const held = data.sessions.filter((s) => s.status === 'held').length;
+  const counts = store.summary(store.getState());
 
   container.append(
     viewHead(t('sessions.title'), t('sessions.lede')),
@@ -15,8 +14,8 @@ export function render(container, { store }) {
         'Edit or delete a session a tutor logged by mistake, without ceremony.'
       ],
       available: [
-        [t('nav.sessions'), data.sessions.length],
-        ['held', held]
+        [t('nav.sessions'), counts.sessions],
+        ['happened', counts.sessionsOccurred]
       ]
     })
   );

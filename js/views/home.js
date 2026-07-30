@@ -12,7 +12,8 @@ import { programTotals } from '../hours.js';
 
 export function render(container, { store }) {
   const data = store.getState();
-  const isEmpty = data.tutors.length === 0 && data.students.length === 0;
+  const counts = store.summary(data);
+  const isEmpty = counts.tutors === 0 && counts.students === 0;
 
   container.append(hero(isEmpty, store));
 
@@ -21,14 +22,13 @@ export function render(container, { store }) {
     return;
   }
 
-  const totals = programTotals(data.sessions, data.tutors, data.students);
-  const activeMatches = data.matches.filter((m) => m.status === 'active').length;
+  const totals = programTotals(data.sessions, data.pairings, data.people);
 
   container.append(
     el('div', { class: 'grid' },
-      statCard(t('home.stat.tutors'), data.tutors.length),
-      statCard(t('home.stat.students'), data.students.length),
-      statCard(t('home.stat.matches'), activeMatches),
+      statCard(t('home.stat.tutors'), counts.tutors),
+      statCard(t('home.stat.students'), counts.students),
+      statCard(t('home.stat.pairings'), counts.activePairings),
       statCard(t('home.stat.hours'), totals.hoursLabel)
     ),
 
@@ -37,7 +37,7 @@ export function render(container, { store }) {
       el('div', { class: 'row' },
         linkButton(t('action.logSession'), '#/log', 'primary'),
         linkButton(t('action.viewTutors'), '#/tutors'),
-        linkButton(t('nav.matches'), '#/matches'),
+        linkButton(t('nav.pairings'), '#/pairings'),
         linkButton(t('data.export.title'), '#/data')
       )
     )

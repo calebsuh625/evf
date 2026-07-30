@@ -3,7 +3,7 @@ import { t } from '../i18n.js';
 import { placeholder } from './placeholder.js';
 
 export function render(container, { store }) {
-  const data = store.getState();
+  const counts = store.summary(store.getState());
 
   container.append(
     viewHead(t('tutors.title'), t('tutors.lede')),
@@ -14,9 +14,9 @@ export function render(container, { store }) {
         'Show each tutor their own hours without them having to ask an admin for it.'
       ],
       available: [
-        [t('nav.tutors'), data.tutors.length],
-        [t('nav.matches'), data.matches.length],
-        [t('nav.sessions'), data.sessions.length]
+        [t('nav.tutors'), counts.tutors],
+        [t('home.stat.pairings'), counts.activePairings],
+        [t('data.status.capacity'), counts.tutorsWithCapacity]
       ]
     })
   );

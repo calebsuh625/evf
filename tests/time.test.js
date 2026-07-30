@@ -180,7 +180,7 @@ describe('week anchoring', () => {
 
   it('resolves a slot to a concrete interval', () => {
     const anchor = weekAnchorUtcIso(SAT_WINTER);
-    const slot = { day: 6, start: '09:00', end: '11:00', tz: 'America/New_York' };
+    const slot = { weekday: 6, startTime: '09:00', endTime: '11:00', timezone: 'America/New_York' };
     const interval = slotToInterval(slot, anchor);
     equal(interval.startIso, '2026-03-07T14:00:00.000Z');
     equal(interval.endIso, '2026-03-07T16:00:00.000Z');
@@ -188,7 +188,7 @@ describe('week anchoring', () => {
 
   it('handles a slot that runs past local midnight', () => {
     const anchor = weekAnchorUtcIso(SAT_WINTER);
-    const slot = { day: 6, start: '23:00', end: '01:00', tz: 'America/New_York' };
+    const slot = { weekday: 6, startTime: '23:00', endTime: '01:00', timezone: 'America/New_York' };
     const interval = slotToInterval(slot, anchor);
     equal((interval.endMs - interval.startMs) / 60000, 120);
   });
@@ -210,8 +210,8 @@ describe('interval overlap', () => {
 
 describe('availability overlap across the Pacific', () => {
   // The signature case: Saturday morning in the US is Saturday night in China.
-  const tutorSatMorningNY = [{ day: 6, start: '08:00', end: '11:00', tz: 'America/New_York' }];
-  const studentSatNightSH = [{ day: 6, start: '20:00', end: '23:00', tz: 'Asia/Shanghai' }];
+  const tutorSatMorningNY = [{ weekday: 6, startTime: '08:00', endTime: '11:00', timezone: 'America/New_York' }];
+  const studentSatNightSH = [{ weekday: 6, startTime: '20:00', endTime: '23:00', timezone: 'Asia/Shanghai' }];
 
   it('finds the overlap that a naive day-number comparison would also find', () => {
     // Sat 08:00–11:00 EST = Sat 13:00–16:00 UTC = Sat 21:00–24:00 Shanghai.
@@ -225,8 +225,8 @@ describe('availability overlap across the Pacific', () => {
     // Student: Sunday 10:00–12:00 Shanghai = Sunday 02:00–04:00 UTC.
     // Same two hours, on days labelled differently at each end. A comparison
     // that matched on day-of-week first would score this zero.
-    const tutor = [{ day: 6, start: '21:00', end: '23:00', tz: 'America/New_York' }];
-    const student = [{ day: 0, start: '10:00', end: '12:00', tz: 'Asia/Shanghai' }];
+    const tutor = [{ weekday: 6, startTime: '21:00', endTime: '23:00', timezone: 'America/New_York' }];
+    const student = [{ weekday: 0, startTime: '10:00', endTime: '12:00', timezone: 'Asia/Shanghai' }];
     equal(availabilityOverlapMinutes(tutor, student, SAT_WINTER), 120);
   });
 
@@ -235,8 +235,8 @@ describe('availability overlap across the Pacific', () => {
     // spills into Sunday UTC, which is a Sunday *seven days before* the
     // anchor's Sunday. Without the ±7-day shift this scores zero, and the
     // most natural weekend slot in the whole program would look impossible.
-    const tutor = [{ day: 6, start: '21:00', end: '23:00', tz: 'America/New_York' }];
-    const student = [{ day: 0, start: '10:00', end: '12:00', tz: 'Asia/Shanghai' }];
+    const tutor = [{ weekday: 6, startTime: '21:00', endTime: '23:00', timezone: 'America/New_York' }];
+    const student = [{ weekday: 0, startTime: '10:00', endTime: '12:00', timezone: 'Asia/Shanghai' }];
 
     equal(availabilityOverlapMinutes(tutor, student, SAT_WINTER), 120);
 
@@ -262,8 +262,8 @@ describe('availability overlap across the Pacific', () => {
   });
 
   it('returns zero for genuinely incompatible schedules', () => {
-    const tutor = [{ day: 6, start: '08:00', end: '10:00', tz: 'America/New_York' }];
-    const student = [{ day: 6, start: '08:00', end: '10:00', tz: 'Asia/Shanghai' }];
+    const tutor = [{ weekday: 6, startTime: '08:00', endTime: '10:00', timezone: 'America/New_York' }];
+    const student = [{ weekday: 6, startTime: '08:00', endTime: '10:00', timezone: 'Asia/Shanghai' }];
     // Sat 08:00 NY is Sat 21:00 Shanghai. No overlap with Sat morning there.
     equal(availabilityOverlapMinutes(tutor, student, SAT_WINTER), 0);
   });
@@ -278,8 +278,8 @@ describe('availability overlap across the Pacific', () => {
     // A single 3-hour tutor window cannot yield 6 hours of tutoring just
     // because the student listed two overlapping windows.
     const student = [
-      { day: 6, start: '20:00', end: '23:00', tz: 'Asia/Shanghai' },
-      { day: 6, start: '21:00', end: '23:59', tz: 'Asia/Shanghai' }
+      { weekday: 6, startTime: '20:00', endTime: '23:00', timezone: 'Asia/Shanghai' },
+      { weekday: 6, startTime: '21:00', endTime: '23:59', timezone: 'Asia/Shanghai' }
     ];
     const total = availabilityOverlapMinutes(tutorSatMorningNY, student, SAT_WINTER);
     ok(total <= 180, `expected at most the tutor's 180 minutes, got ${total}`);

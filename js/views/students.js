@@ -3,7 +3,7 @@ import { t } from '../i18n.js';
 import { placeholder } from './placeholder.js';
 
 export function render(container, { store }) {
-  const data = store.getState();
+  const counts = store.summary(store.getState());
 
   container.append(
     viewHead(t('students.title'), t('students.lede')),
@@ -14,8 +14,8 @@ export function render(container, { store }) {
         'Show what a student has been working on, in Chinese, for a guardian who wants to look.'
       ],
       available: [
-        [t('nav.students'), data.students.length],
-        [t('nav.matches'), data.matches.length]
+        [t('nav.students'), counts.students],
+        [t('data.status.unpaired'), counts.unpairedStudents]
       ]
     })
   );
