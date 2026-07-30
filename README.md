@@ -115,7 +115,7 @@ under the `/evf/` project subpath.
 
 [![tests](https://github.com/calebsuh625/evf/actions/workflows/tests.yml/badge.svg)](https://github.com/calebsuh625/evf/actions/workflows/tests.yml)
 
-**477 tests.** Every push and pull request runs them and fails on a regression.
+**478 tests.** Every push and pull request runs them and fails on a regression.
 
 In a browser: open <http://localhost:8000/tests/test.html>.
 
@@ -124,7 +124,7 @@ Headless:
 ```sh
 node tests/run-node.mjs                              # 446 tests, nothing to install
 npm install && npx playwright install chromium
-node tests/run-browser.mjs http://localhost:8000     # all 477
+node tests/run-browser.mjs http://localhost:8000     # all 478
 ```
 
 The Node run needs nothing installed, because the logic modules are deliberately
