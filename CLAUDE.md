@@ -525,6 +525,22 @@ An honest limit: these tests read the accessibility tree, which is what a
 screen reader consumes. That is not the same as listening to VoiceOver or NVDA,
 and does not replace doing so before a real launch.
 
+## Browser floor
+
+Safari / iOS **15.4+**, plus current Chrome, Edge and Firefox. Set by
+`:focus-visible` and `100dvh`; both have fallbacks in `css/base.css` and
+`css/layout.css`.
+
+Two rules that exist because of WebKit and must not be relaxed:
+
+- **Never hand `Date` a non-ISO string.** Everything reaching `Date` or
+  `Date.parse` is a full ISO 8601 UTC string, validated at the store boundary
+  by `ISO_UTC`. Safari rejects looser formats Chrome accepts, and an
+  `Invalid Date` that only appears on one browser is the worst possible bug in
+  a scheduling app.
+- **Midnight can come back as hour 24** under `hourCycle: 'h23'`.
+  `wallPartsInZone` takes `hour % 24` for exactly this reason.
+
 ## The self-test panel
 
 `#/selftest` runs the timezone assertions in the reader's browser and shows

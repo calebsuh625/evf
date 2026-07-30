@@ -161,6 +161,23 @@ First visit is about **126 KB gzipped**. Views load on demand, so a student on a
 phone downloads 9 modules rather than 28 and never fetches the admin screens or
 the matcher. No images, no web fonts.
 
+## Browser support
+
+**Safari / iOS 15.4 and later** (March 2022, iPhone 6s onward), and any
+current Chrome, Edge or Firefox. The floor is set by `:focus-visible` and
+`100dvh`, both of which have fallbacks, so slightly older WebKit degrades
+rather than breaks.
+
+Two WebKit-specific traps are avoided deliberately and should stay avoided:
+
+- **No non-ISO string is ever handed to `Date`.** Every timestamp reaching
+  `Date` or `Date.parse` is a full ISO 8601 UTC string, validated at the store
+  boundary. Safari has historically rejected looser formats that Chrome
+  accepts, and a date that silently becomes `Invalid Date` on one browser is
+  the worst kind of bug in an app about scheduling.
+- **Midnight can format as hour 24** under `hourCycle: 'h23'` on some engines.
+  `wallPartsInZone` takes `hour % 24`.
+
 ## Time zones
 
 The hardest part of the program, and the reason `js/time.js` exists.
