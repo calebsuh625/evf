@@ -12,7 +12,7 @@
     "notAcceptingStudents": "p_t01, p_t04, p_t05, p_t06, p_t09 and p_t12 have acceptingStudents false, which is separate from being inactive.",
     "midnightSpanningAvailability": "Students in band E are free 22:00-01:00 Asia/Shanghai, a window that crosses local midnight."
   },
-  "version": 3,
+  "version": 4,
   "exportedAt": "2026-07-27T00:00:00.000Z",
   "program": {
     "name": "Weekend Tutoring",
@@ -53,6 +53,10 @@
       ],
       "maxStudents": 2,
       "acceptingStudents": false,
+      "interests": [
+        "basketball",
+        "chess"
+      ],
       "bio": "Heritage Mandarin speaker. Happy to explain a new word in Chinese first, then in English.",
       "meetingLink": "https://meet.example.org/demo-avery-alpha",
       "createdAt": "2026-04-18T14:00:00.000Z"
@@ -80,6 +84,10 @@
       ],
       "maxStudents": 2,
       "acceptingStudents": true,
+      "interests": [
+        "k-pop",
+        "photography"
+      ],
       "bio": "Prefers conversation practice over grammar drilling.",
       "meetingLink": "https://meet.example.org/demo-blake-beta",
       "createdAt": "2026-04-18T14:00:00.000Z"
@@ -107,6 +115,10 @@
       ],
       "maxStudents": 3,
       "acceptingStudents": true,
+      "interests": [
+        "chess",
+        "coding basics"
+      ],
       "bio": "Runs the maths club. Likes a student who asks why.",
       "meetingLink": "https://meet.example.org/demo-corin-gamma",
       "createdAt": "2026-04-18T14:00:00.000Z"
@@ -133,6 +145,10 @@
       ],
       "maxStudents": 2,
       "acceptingStudents": false,
+      "interests": [
+        "anime",
+        "cooking"
+      ],
       "bio": "First term volunteering. Patient with beginners.",
       "meetingLink": "https://meet.example.org/demo-devon-delta",
       "createdAt": "2026-04-18T14:00:00.000Z"
@@ -159,6 +175,10 @@
       ],
       "maxStudents": 1,
       "acceptingStudents": false,
+      "interests": [
+        "astronomy",
+        "chess"
+      ],
       "bio": "Has room for one student and said so up front. Two students currently fit this slot.",
       "meetingLink": "https://meet.example.org/demo-ellis-epsilon",
       "createdAt": "2026-04-18T14:00:00.000Z"
@@ -185,6 +205,10 @@
       ],
       "maxStudents": 2,
       "acceptingStudents": false,
+      "interests": [
+        "photography",
+        "cooking"
+      ],
       "bio": "",
       "meetingLink": "https://meet.example.org/demo-frankie-zeta",
       "createdAt": "2026-04-18T14:00:00.000Z"
@@ -212,6 +236,10 @@
       ],
       "maxStudents": 3,
       "acceptingStudents": true,
+      "interests": [
+        "chess",
+        "photography"
+      ],
       "bio": "Arizona, so this tutor never changes clocks in March or November.",
       "meetingLink": "https://meet.example.org/demo-gale-eta",
       "createdAt": "2026-04-18T14:00:00.000Z"
@@ -239,6 +267,10 @@
       ],
       "maxStudents": 2,
       "acceptingStudents": true,
+      "interests": [
+        "skateboarding",
+        "minecraft"
+      ],
       "bio": "Late Saturday nights suit them, which lands on Sunday morning in China.",
       "meetingLink": "https://meet.example.org/demo-harper-theta",
       "createdAt": "2026-04-18T14:00:00.000Z"
@@ -265,6 +297,10 @@
       ],
       "maxStudents": 1,
       "acceptingStudents": false,
+      "interests": [
+        "piano",
+        "k-pop"
+      ],
       "bio": "",
       "meetingLink": "https://meet.example.org/demo-indigo-iota",
       "createdAt": "2026-04-18T14:00:00.000Z"
@@ -292,6 +328,10 @@
       ],
       "maxStudents": 2,
       "acceptingStudents": true,
+      "interests": [
+        "cooking",
+        "astronomy"
+      ],
       "bio": "",
       "meetingLink": "https://meet.example.org/demo-jules-kappa",
       "createdAt": "2026-04-18T14:00:00.000Z"
@@ -318,6 +358,10 @@
       ],
       "maxStudents": 2,
       "acceptingStudents": true,
+      "interests": [
+        "drawing",
+        "anime"
+      ],
       "bio": "",
       "meetingLink": "https://meet.example.org/demo-kit-lambda",
       "createdAt": "2026-04-18T14:00:00.000Z"
@@ -345,6 +389,9 @@
       ],
       "maxStudents": 1,
       "acceptingStudents": false,
+      "interests": [
+        "basketball"
+      ],
       "bio": "Paused for exam season. Not a problem and not a strike; expects to be back.",
       "meetingLink": "https://meet.example.org/demo-lennox-mu",
       "createdAt": "2026-04-18T14:00:00.000Z"

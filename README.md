@@ -7,9 +7,10 @@ It is a static site. There is no backend, no login, and no server holding
 children's names, schools, or guardian contacts. Everything runs in the browser,
 and the data lives in a JSON file the coordinator keeps.
 
-**Status:** The tutor-facing side is built — dashboard, session logging, hours
-with a printable verification record, student pages, and availability. The
-coordinator screens are still scaffolded.
+**Status:** The tutor side is built (dashboard, session logging, hours with a
+printable verification record, student pages, availability), the student and
+guardian side is built, and the matching engine and its coordinator screen are
+built. The remaining coordinator screens are still scaffolded.
 
 There is no login yet: a picker at the top right chooses whether you are
 looking as the coordinator or as a particular tutor, and it remembers.
@@ -38,10 +39,13 @@ configuration — the paths resolve correctly under a project subpath.
 
 ## Tests
 
-Open <http://localhost:8000/tests/test.html>. 346 unit tests covering the
+Open <http://localhost:8000/tests/test.html>. 378 unit tests covering the
 timezone math, the pairing scorer, the hour computation, CSV handling, the
-tutor-facing selectors, the bilingual dictionary, and the store's migration,
-validation and export logic.
+tutor-facing selectors, the matcher, the bilingual dictionary, asset
+provenance, and the store's migration, validation and export logic.
+
+A few of those read the browser's Resource Timing data and so only run in a
+browser; in Node they report as skipped rather than passing vacuously.
 
 There is also a **[time zone self-test](#/selftest)** built into the app itself
 — open the running site and follow the link in the footer. It runs the timezone
@@ -54,7 +58,7 @@ code:
 
 ```sh
 node -e "import('./tests/runner.js').then(async ({run}) => {
-  for (const f of ['time','matching','hours','csv','store','tutor','i18n']) await import('./tests/'+f+'.test.js');
+  for (const f of ['time','matching','hours','csv','store','tutor','i18n','assets']) await import('./tests/'+f+'.test.js');
   const r = await run(e => e.type==='fail' && console.log('FAIL', e.name, e.error));
   console.log(r); process.exit(r.failed ? 1 : 0);
 })"
@@ -105,6 +109,50 @@ program only works if volunteers want to come back.
   over can read it and know where to pick up.
 - **Availability** — recurring weekend windows in your own clock, echoed in
   Beijing time, plus a plain "not taking new students right now" switch.
+
+## For students and their families
+
+`#/student` shows the tutor, the next class in Beijing time with the meeting
+link, the current homework, and everything covered so far.
+
+**There is nothing a student has to fill in.** No profile, no attendance, no
+forms. They are being served, not managed — a test asserts the page contains
+zero editable controls. Guardian contact details are the one thing that can be
+edited, only from the guardian view, and every field is optional: leaving them
+all blank is a complete answer and changes nothing about how the program runs.
+
+The screens default to Simplified Chinese for these roles, with an English
+toggle that is remembered once used. They are built for a phone on a slow
+connection: no images, no web fonts, nothing loaded from outside this
+repository, and a deliberately small page.
+
+## Matching
+
+`#/admin/matching` is where a coordinator turns a list of waiting students and
+willing volunteers into pairings.
+
+Schedule overlap is a hard requirement — fifteen hours apart, a pair with no
+shared window has no session to have, so it is never suggested no matter how
+well they fit otherwise. Beyond that the scorer weighs subject fit, English
+level, shared interests, and how loaded each tutor already is, so students
+spread across volunteers instead of piling onto whoever fits best.
+
+**Every suggestion explains itself**, in plain language and in either language:
+
+> 3 shared hours, Saturday morning Beijing time (08:00–11:00) · Both listed
+> english conversation · Tutor is comfortable at intermediate level · Both
+> interested in k-pop · Tutor has 1 of 2 places open
+>
+> *Worth knowing:* Only one shared window — fragile if either has to cancel ·
+> This is the tutor's last place
+
+A score is never shown without that reasoning. The screen also surfaces the
+things nobody thinks to look for: students nobody can currently take and
+exactly why, volunteers sitting idle with room to spare, and existing pairings
+whose availability has quietly drifted apart.
+
+**The system suggests; a human accepts.** Nothing is ever paired
+automatically.
 
 ## Time zones
 

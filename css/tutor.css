@@ -304,3 +304,106 @@ body[data-role="tutor"] .role-picker__select {
    the printer — see css/print.css. One source, so the paper cannot disagree
    with the screen. */
 .cert { display: none; }
+
+/* ------------------------------------------------------------------ *
+ * Student / guardian
+ *
+ * Built for a phone on a slow connection: no images, no icon font, nothing
+ * fetched. Type and spacing do all the work.
+ * ------------------------------------------------------------------ */
+
+.st-head { margin-bottom: var(--sp-4); }
+.st-head h1 { margin-bottom: var(--sp-1); }
+
+.st-next { border-left: 3px solid var(--accent); margin-bottom: var(--sp-4); }
+.st-next__day { margin: 0; font-size: 1.125rem; font-weight: 650; }
+.st-next__time {
+  margin: 0;
+  font-size: 2.5rem; font-weight: 700; line-height: 1.05; letter-spacing: -.02em;
+}
+.st-next__theirs { margin-top: var(--sp-2); }
+.st-next__join { margin-top: var(--sp-3); }
+
+.st-homework { border-left: 3px solid var(--good); margin-bottom: var(--sp-4); }
+.st-homework.is-empty { border-left-color: var(--line); }
+.st-homework__text { margin: 0 0 var(--sp-1); font-size: 1.125rem; font-weight: 550; }
+
+.st-tutor { margin-bottom: var(--sp-4); }
+.st-tutor__name { margin: 0 0 var(--sp-2); font-size: 1.125rem; font-weight: 650; }
+
+.st-history { margin: var(--sp-2) 0 0; padding: 0; list-style: none; }
+.st-history__item {
+  display: flex; flex-wrap: wrap; gap: var(--sp-2) var(--sp-3);
+  padding: var(--sp-3) 0;
+  border-top: 1px solid var(--line);
+}
+.st-history__item:first-child { border-top: none; }
+.st-history__item.is-missed { opacity: .6; }
+.st-history__date { flex: 0 0 auto; font-size: .875rem; font-weight: 600; color: var(--ink-soft); }
+.st-history__item > div { flex: 1 1 200px; }
+.st-history__covered { margin: 0 0 var(--sp-1); }
+
+.gd-contact { border-left: 3px solid var(--warn); margin-top: var(--sp-4); }
+.gd-fields { display: flex; flex-direction: column; gap: var(--sp-3); margin: var(--sp-3) 0; }
+.gd-field { display: flex; flex-direction: column; gap: var(--sp-1); }
+.gd-field__label { font-size: .8125rem; font-weight: 550; color: var(--ink-soft); }
+
+/* ------------------------------------------------------------------ *
+ * Matching
+ * ------------------------------------------------------------------ */
+
+.match-block { margin-bottom: var(--sp-6); }
+.match-block > h2 { margin-bottom: var(--sp-1); }
+
+.match-student__head {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--sp-3);
+  margin-bottom: var(--sp-3);
+}
+.match-student__name { margin: 0; font-size: 1.0625rem; }
+
+.match-candidates {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--sp-3);
+}
+
+.match-candidate {
+  display: flex; flex-direction: column; gap: var(--sp-3);
+  padding: var(--sp-3);
+  background: var(--paper-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
+.match-candidate.is-top { border-color: var(--accent); background: var(--accent-soft); }
+
+.match-candidate__head {
+  display: flex; align-items: baseline; gap: var(--sp-2);
+}
+.match-candidate__rank {
+  font-size: .6875rem; font-weight: 600;
+  letter-spacing: .04em; text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.match-candidate__name { flex: 1; font-weight: 650; }
+.match-candidate__score {
+  font-size: 1.125rem; font-weight: 700; color: var(--accent);
+}
+
+.match-reasons__title {
+  display: block;
+  font-size: .6875rem; font-weight: 600;
+  letter-spacing: .04em; text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: 2px;
+}
+.match-reasons ul { margin: 0; padding-left: 1.1em; font-size: .875rem; }
+.match-reasons.is-watch ul { color: var(--warn); }
+.match-candidate__actions { margin-top: auto; }
+.match-candidate__actions .btn { width: 100%; }
+
+.match-blocked { border-left: 3px solid var(--warn); }
+.match-blocked__fix { margin: var(--sp-2) 0 0; font-weight: 550; }
+.match-blocked__nearest { margin-top: var(--sp-2); }
+
+.match-stale { border-left: 3px solid var(--line); }
+.match-stale__who { margin: 0 0 2px; }

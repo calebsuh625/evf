@@ -20,6 +20,21 @@ export function it(name, fn) {
   currentSuite.tests.push({ name, fn });
 }
 
+/**
+ * Register a test that cannot run here, with the reason.
+ *
+ * Reported as skipped rather than passed. A test that quietly reports PASS
+ * when it did not run is worse than no test, because it is the one you stop
+ * checking.
+ */
+it.skip = function skip(name, reason) {
+  if (!currentSuite) throw new Error(`it.skip("${name}") called outside describe()`);
+  currentSuite.tests.push({ name, skip: true, reason });
+};
+
+/** True when the suite is running in a browser rather than in Node. */
+export const inBrowser = typeof window !== 'undefined' && typeof document !== 'undefined';
+
 /* ---------------------------------------------------------------- *
  * Assertions
  * ---------------------------------------------------------------- */
@@ -78,16 +93,22 @@ function show(value) {
 
 /**
  * @param {(event: object) => void} [report] called per suite and per test
- * @returns {Promise<{passed:number, failed:number, total:number}>}
+ * @returns {Promise<{passed:number, failed:number, skipped:number, total:number}>}
  */
 export async function run(report = () => {}) {
   let passed = 0;
   let failed = 0;
+  let skipped = 0;
 
   for (const suite of suites) {
     report({ type: 'suite', name: suite.name });
 
     for (const test of suite.tests) {
+      if (test.skip) {
+        skipped += 1;
+        report({ type: 'skip', suite: suite.name, name: test.name, reason: test.reason });
+        continue;
+      }
       try {
         await test.fn();
         passed += 1;
@@ -105,7 +126,7 @@ export async function run(report = () => {}) {
     }
   }
 
-  const summary = { passed, failed, total: passed + failed };
+  const summary = { passed, failed, skipped, total: passed + failed + skipped };
   report({ type: 'done', ...summary });
   return summary;
 }

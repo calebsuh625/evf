@@ -57,7 +57,7 @@ import {
 } from './csv.js';
 import { isValidTimeZone, parseHhMm } from './time.js';
 
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 const STORAGE_KEY = 'evf.program.v1';
 const LANG_KEY = 'evf.lang';
@@ -119,6 +119,9 @@ export function newTutor(fields = {}) {
     // Separate from `active`. A tutor mid-term with a full plate is still very
     // much active; they just are not looking for another student this week.
     acceptingStudents: true,
+    // Matched against a student's interests. A shared one is never why a
+    // pairing happens, but it is often why the first session goes well.
+    interests: [],
     bio: '',
     meetingLink: '',
     createdAt: new Date().toISOString(),
@@ -342,6 +345,23 @@ const MIGRATIONS = {
   ,
 
   /**
+   * 3 -> 4: tutors gain `interests`, so the matcher can notice that a tutor
+   * and a student both like chess. Empty is a fine answer and simply scores
+   * nothing.
+   */
+  3(data) {
+    return {
+      ...data,
+      version: 4,
+      people: (data.people ?? []).map((person) =>
+        person.role === 'tutor' && person.interests === undefined
+          ? { ...person, interests: [] }
+          : person
+      )
+    };
+  },
+
+  /**
    * 2 -> 3: tutors gain `acceptingStudents`, which is separate from `active`
    * — a tutor with a full plate is still active, just not looking for another
    * student. Sessions may now carry `occurred: null`, meaning scheduled but
@@ -543,7 +563,7 @@ export function validate(data) {
       if (p.maxStudents != null && !(Number.isFinite(Number(p.maxStudents)) && Number(p.maxStudents) >= 0)) {
         errors.push(`Tutor "${p.id}" has a non-numeric maxStudents "${p.maxStudents}".`);
       }
-      for (const field of ['subjects', 'levelsComfortable']) {
+      for (const field of ['subjects', 'levelsComfortable', 'interests']) {
         if (p[field] != null && !Array.isArray(p[field])) {
           errors.push(`Tutor "${p.id}" field "${field}" must be an array.`);
         }
@@ -949,6 +969,8 @@ const CSV_TABLES = {
       ['subjects', (p) => formatList(p.subjects), (c) => parseList(c)],
       ['levelsComfortable', (p) => formatList(p.levelsComfortable), (c) => parseList(c)],
       ['maxStudents', (p) => p.maxStudents, (c) => parseNumber(c, 2)],
+      ['acceptingStudents', (p) => p.acceptingStudents, (c) => parseBoolean(c, true)],
+      ['interests', (p) => formatList(p.interests), (c) => parseList(c)],
       ['bio', (p) => p.bio, (c) => c],
       ['meetingLink', (p) => p.meetingLink, (c) => c],
       ['createdAt', (p) => p.createdAt, (c) => c || undefined]
@@ -1378,6 +1400,42 @@ export function capSessionMinutes({ durationMinutes, prepMinutes, followupMinute
   };
 }
 
+/**
+ * Create a pairing. The only way one comes into existence.
+ *
+ * Called when a human presses Accept on a suggestion — the matcher never
+ * writes anything itself.
+ */
+export function createPairing({ tutorId, studentId, notes = '' }) {
+  const tutor = personById(tutorId);
+  const student = personById(studentId);
+  if (tutor?.role !== 'tutor') throw new TypeError(`createPairing: "${tutorId}" is not a tutor.`);
+  if (student?.role !== 'student') throw new TypeError(`createPairing: "${studentId}" is not a student.`);
+
+  const existing = getState().pairings.find(
+    (p) => p.tutorId === tutorId && p.studentId === studentId && p.status === 'active'
+  );
+  if (existing) return existing;
+
+  const pairing = newPairing({ tutorId, studentId, notes, status: 'active' });
+  update((current) => ({ ...current, pairings: [...current.pairings, pairing] }));
+  return pairing;
+}
+
+/** Change a pairing's status. Ending one stamps when it ended. */
+export function setPairingStatus(pairingId, status) {
+  if (!PAIRING_STATUSES.includes(status)) {
+    throw new TypeError(`setPairingStatus: unknown status "${status}".`);
+  }
+  update((current) => ({
+    ...current,
+    pairings: current.pairings.map((p) => (p.id === pairingId
+      ? { ...p, status, endedAt: status === 'ended' ? (p.endedAt ?? new Date().toISOString()) : null }
+      : p))
+  }));
+  return pairingById(pairingId);
+}
+
 /** Put a session on the calendar without logging it. */
 export function scheduleSession(fields) {
   const session = newScheduledSession(fields);
@@ -1399,6 +1457,21 @@ export function updatePerson(personId, patch) {
     people: current.people.map((p) => (p.id === personId ? { ...p, ...patch } : p))
   }));
   return personById(personId);
+}
+
+/**
+ * Guardian contact details, editable only from the guardian view.
+ *
+ * Every field is optional and blank is always a valid answer (principle 5).
+ * A guardian who wants to leave nothing has left nothing, and no screen may
+ * treat that as incomplete.
+ */
+export function setGuardianContact(studentId, { guardianName, guardianWechat, guardianEmail }) {
+  return updatePerson(studentId, {
+    guardianName: (guardianName ?? '').trim(),
+    guardianWechat: (guardianWechat ?? '').trim(),
+    guardianEmail: (guardianEmail ?? '').trim()
+  });
 }
 
 /** The "not taking new students right now" toggle. */
@@ -1453,11 +1526,46 @@ export function saveViewAs(value) {
   return value;
 }
 
-/** The tutor currently being viewed as, or null when that is the coordinator. */
+const GUARDIAN_PREFIX = 'guardian:';
+
+/**
+ * Who is looking, as a role and a person.
+ *
+ * 'admin' | '<tutorId>' | '<studentId>' | 'guardian:<studentId>'.
+ *
+ * A guardian is not a separate record — they are whoever is holding the
+ * student's phone. Modelling them as a person would mean asking a family to
+ * register before they can read their own child's homework, which principle 5
+ * rules out.
+ *
+ * @returns {{role:'admin'|'tutor'|'student'|'guardian', person: object|null}}
+ */
+export function currentView(data = state, viewAs = loadViewAs()) {
+  if (!viewAs || viewAs === 'admin') return { role: 'admin', person: null };
+
+  const guardian = viewAs.startsWith(GUARDIAN_PREFIX);
+  const id = guardian ? viewAs.slice(GUARDIAN_PREFIX.length) : viewAs;
+  const person = data.people.find((p) => p.id === id) ?? null;
+
+  if (!person) return { role: 'admin', person: null };
+  if (person.role === 'tutor') return { role: 'tutor', person };
+  return { role: guardian ? 'guardian' : 'student', person };
+}
+
+export function guardianViewFor(studentId) {
+  return `${GUARDIAN_PREFIX}${studentId}`;
+}
+
+/** The tutor currently being viewed as, or null when that is not the case. */
 export function currentTutor(data = state, viewAs = loadViewAs()) {
-  if (!viewAs || viewAs === 'admin') return null;
-  const person = data.people.find((p) => p.id === viewAs);
-  return person?.role === 'tutor' ? person : null;
+  const view = currentView(data, viewAs);
+  return view.role === 'tutor' ? view.person : null;
+}
+
+/** The student currently being viewed as, whether by them or their guardian. */
+export function currentStudent(data = state, viewAs = loadViewAs()) {
+  const view = currentView(data, viewAs);
+  return view.role === 'student' || view.role === 'guardian' ? view.person : null;
 }
 
 /* ------------------------------------------------------------------ *

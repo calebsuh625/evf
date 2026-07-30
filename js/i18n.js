@@ -262,6 +262,106 @@ const STRINGS = {
     'weekday.4': 'Thursday',
     'weekday.5': 'Friday',
     'weekday.6': 'Saturday',
+    'role.students': 'Students',
+    'role.guardians': 'Guardians',
+    'role.guardianOf': 'Guardian of {name}',
+    'role.needStudent.title': 'Pick a student first',
+    'role.needStudent.body': 'This screen shows one student\'s own classes. Choose who you are from the picker at the top right.',
+
+    'st.nav.home': 'My classes',
+    'st.title': 'My classes',
+    'st.greeting': 'Hi {name}',
+    'st.tutor.title': 'My tutor',
+    'st.tutor.teaches': 'Teaches',
+    'st.tutor.contact': 'Contact',
+    'st.tutor.none': 'You have not been paired with a tutor yet. Your coordinator is working on it.',
+    'st.next.title': 'Next class',
+    'st.next.none': 'No class scheduled yet.',
+    'st.next.join': 'Join the class',
+    'st.next.yourTime': 'Your time',
+    'st.next.tutorTime': 'Your tutor\'s time',
+    'st.homework.title': 'Homework',
+    'st.homework.none': 'Nothing set right now.',
+    'st.homework.from': 'Set on {date}',
+    'st.history.title': 'Past classes',
+    'st.history.covered': 'What you did',
+    'st.history.homework': 'Homework',
+    'st.history.none': 'No classes yet.',
+    'st.history.didNotHappen': 'This class did not happen',
+    'st.nothingRequired': 'There is nothing you need to fill in here.',
+
+    'gd.nav.home': 'My child\'s classes',
+    'gd.contact.title': 'Guardian contact details',
+    'gd.contact.body': 'Optional. Leave anything blank and it stays blank — the program will still work exactly the same.',
+    'gd.contact.name': 'Your name',
+    'gd.contact.wechat': 'WeChat',
+    'gd.contact.email': 'Email',
+    'gd.contact.save': 'Save',
+    'gd.contact.saved': 'Saved.',
+    'gd.contact.onlyYou': 'Only you can edit these.',
+    'gd.contact.viewOnly': 'Guardian contact details can only be changed from the guardian view.',
+
+    'match.nav': 'Matching',
+    'match.title': 'Matching',
+    'match.lede': 'Suggestions only. Nothing is paired until you accept it.',
+    'match.waiting.title': 'Students waiting',
+    'match.waiting.none': 'Every active student has a tutor.',
+    'match.blocked.title': 'Nobody can take these students yet',
+    'match.blocked.body': 'Each one says what would have to change.',
+    'match.idle.title': 'Volunteers with room and nobody to take',
+    'match.idle.body': 'These tutors are free and willing. Worth recruiting a student who fits.',
+    'match.stale.title': 'Pairings that no longer share any time',
+    'match.stale.body': 'These are active but their availability has drifted apart. Nobody will mention it, so this is the only place it shows up.',
+    'match.stale.noOverlap': 'No shared time',
+    'match.stale.missing': 'One of them has not set any availability',
+    'match.candidate': 'Suggestion {n}',
+    'match.why': 'Why',
+    'match.watch': 'Worth knowing',
+    'match.score': 'Fit',
+    'match.accept': 'Pair them',
+    'match.accepted': 'Paired {student} with {tutor}.',
+    'match.slotsOpen': '{remaining} of {total} places open',
+    'match.noCandidates': 'No suitable tutor',
+    'match.nearest': 'Closest so far',
+    'match.blockedBy': 'Blocked by',
+    'match.counts': '{waiting} waiting · {matchable} matchable · {blocked} blocked',
+
+    'match.part.morning': 'morning',
+    'match.part.afternoon': 'afternoon',
+    'match.part.evening': 'evening',
+
+    'match.reason.overlap': '{hours} shared hours, {weekday} {part} Beijing time ({startTime}–{endTime})',
+    'match.reason.goals': 'Both listed {list}',
+    'match.reason.level': 'Tutor is comfortable at {level} level',
+    'match.reason.interests': 'Both interested in {list}',
+    'match.reason.capacity': 'Tutor has {remaining} of {total} places open',
+
+    'match.weak.single-window': 'Only one shared window — fragile if either has to cancel',
+    'match.weak.short-overlap': 'Only {minutes} minutes shared, so there is little room to move',
+    'match.weak.goals-partial': 'Does not cover {list}',
+    'match.weak.level-unstated': 'Level fit is unconfirmed — nobody has said which levels they take',
+    'match.weak.no-shared-interests': 'No interests in common',
+    'match.weak.no-shared-language': 'No shared language, and the student is a beginner',
+    'match.weak.tutor-last-slot': 'This is the tutor\'s last place',
+
+    'match.blocker.no-shared-time': 'No shared time',
+    'match.blocker.no-shared-goal': 'Does not teach what the student asked for',
+    'match.blocker.level-outside-comfort': 'Level outside what the tutor takes',
+    'match.blocker.tutor-at-capacity': 'Tutor is full',
+    'match.blocker.tutor-not-accepting': 'Tutor is not taking new students',
+    'match.blocker.tutor-inactive': 'Tutor is on a break',
+    'match.blocker.student-inactive': 'Student is inactive',
+
+    'match.fix.no-tutors': 'There are no tutors on the roster yet.',
+    'match.fix.matchable': 'This student is matchable.',
+    'match.fix.one-tutor-full': 'One tutor fits this student well but has no places left. This needs another tutor with the same subject and hours, not more asking.',
+    'match.fix.all-tutors-full': 'Every suitable tutor is at the maximum they set for themselves. This needs another tutor.',
+    'match.fix.no-shared-time': 'Nobody shares a weekend window with this student. Ask them for one more slot, or recruit a tutor further west.',
+    'match.fix.no-shared-goal': 'No available tutor covers what this student asked for. Recruit for that subject, or ask the student what else would help.',
+    'match.fix.level-outside-comfort': 'No available tutor has said they take this English level. Worth asking whether someone would try it.',
+    'match.fix.tutor-not-accepting': 'The tutors who fit are not taking new students right now.',
+    'match.fix.tutor-inactive': 'The tutors who fit are on a break.',
+    'match.fix.student-inactive': 'This student is marked inactive.',
     'toast.sampleLoaded': 'Sample data loaded.',
     'toast.imported': 'Imported {count} records.',
     'toast.exported': 'Saved {name}',
@@ -532,6 +632,106 @@ const STRINGS = {
     'weekday.4': '星期四',
     'weekday.5': '星期五',
     'weekday.6': '星期六',
+    'role.students': '学生',
+    'role.guardians': '家长',
+    'role.guardianOf': '{name} 的家长',
+    'role.needStudent.title': '请先选择一位学生',
+    'role.needStudent.body': '本页面展示某一位学生自己的课程。请在右上角选择你的身份。',
+
+    'st.nav.home': '我的课程',
+    'st.title': '我的课程',
+    'st.greeting': '你好，{name}',
+    'st.tutor.title': '我的辅导员',
+    'st.tutor.teaches': '教授科目',
+    'st.tutor.contact': '联系方式',
+    'st.tutor.none': '还没有为你配对辅导员。协调员正在安排。',
+    'st.next.title': '下一节课',
+    'st.next.none': '尚未安排课程。',
+    'st.next.join': '进入课堂',
+    'st.next.yourTime': '你的时间',
+    'st.next.tutorTime': '辅导员的时间',
+    'st.homework.title': '作业',
+    'st.homework.none': '目前没有作业。',
+    'st.homework.from': '{date} 布置',
+    'st.history.title': '往期课程',
+    'st.history.covered': '学习内容',
+    'st.history.homework': '作业',
+    'st.history.none': '还没有上过课。',
+    'st.history.didNotHappen': '这节课没有进行',
+    'st.nothingRequired': '本页面无需你填写任何内容。',
+
+    'gd.nav.home': '孩子的课程',
+    'gd.contact.title': '家长联系方式',
+    'gd.contact.body': '均为选填。留空即可，项目运作完全不受影响。',
+    'gd.contact.name': '你的姓名',
+    'gd.contact.wechat': '微信',
+    'gd.contact.email': '电子邮箱',
+    'gd.contact.save': '保存',
+    'gd.contact.saved': '已保存。',
+    'gd.contact.onlyYou': '只有你可以修改这些内容。',
+    'gd.contact.viewOnly': '家长联系方式只能在家长视图中修改。',
+
+    'match.nav': '配对',
+    'match.title': '配对',
+    'match.lede': '这些只是建议。在你确认之前，不会建立任何配对。',
+    'match.waiting.title': '等待配对的学生',
+    'match.waiting.none': '所有在读学生都已有辅导员。',
+    'match.blocked.title': '暂时无人可以接收这些学生',
+    'match.blocked.body': '每一位都会说明需要改变什么。',
+    'match.idle.title': '有名额但无合适学生的志愿者',
+    'match.idle.body': '这些辅导员有时间也愿意接收。值得为他们招募合适的学生。',
+    'match.stale.title': '已无共同时间的配对',
+    'match.stale.body': '这些配对仍在进行，但双方的可用时间已经错开。没有人会主动提起，因此这里是唯一能发现的地方。',
+    'match.stale.noOverlap': '没有共同时间',
+    'match.stale.missing': '其中一方尚未填写可用时间',
+    'match.candidate': '建议 {n}',
+    'match.why': '推荐理由',
+    'match.watch': '需要留意',
+    'match.score': '匹配度',
+    'match.accept': '建立配对',
+    'match.accepted': '已将 {student} 与 {tutor} 配对。',
+    'match.slotsOpen': '{total} 个名额中还有 {remaining} 个',
+    'match.noCandidates': '暂无合适的辅导员',
+    'match.nearest': '目前最接近的',
+    'match.blockedBy': '受阻于',
+    'match.counts': '{waiting} 人等待 · {matchable} 人可配对 · {blocked} 人受阻',
+
+    'match.part.morning': '上午',
+    'match.part.afternoon': '下午',
+    'match.part.evening': '晚上',
+
+    'match.reason.overlap': '共有 {hours} 小时重叠时间，北京时间{weekday}{part}（{startTime}–{endTime}）',
+    'match.reason.goals': '双方都填写了{list}',
+    'match.reason.level': '辅导员可以教{level}水平',
+    'match.reason.interests': '双方都对{list}感兴趣',
+    'match.reason.capacity': '辅导员 {total} 个名额中还有 {remaining} 个',
+
+    'match.weak.single-window': '只有一个共同时间段——任何一方有事就很难调整',
+    'match.weak.short-overlap': '共同时间只有 {minutes} 分钟，几乎没有调整空间',
+    'match.weak.goals-partial': '无法覆盖{list}',
+    'match.weak.level-unstated': '水平是否合适尚未确认——没有人填写可教的水平范围',
+    'match.weak.no-shared-interests': '没有共同的兴趣爱好',
+    'match.weak.no-shared-language': '没有共同语言，而学生是初学者',
+    'match.weak.tutor-last-slot': '这是该辅导员的最后一个名额',
+
+    'match.blocker.no-shared-time': '没有共同时间',
+    'match.blocker.no-shared-goal': '不教该学生想学的科目',
+    'match.blocker.level-outside-comfort': '水平超出该辅导员可教范围',
+    'match.blocker.tutor-at-capacity': '辅导员名额已满',
+    'match.blocker.tutor-not-accepting': '辅导员目前不接收新学生',
+    'match.blocker.tutor-inactive': '辅导员正在休息',
+    'match.blocker.student-inactive': '该学生未在读',
+
+    'match.fix.no-tutors': '名单中还没有辅导员。',
+    'match.fix.matchable': '这位学生可以配对。',
+    'match.fix.one-tutor-full': '有一位辅导员非常合适，但已没有名额。这需要再招一位同科目、同时段的辅导员，而不是继续询问。',
+    'match.fix.all-tutors-full': '所有合适的辅导员都已达到自己设定的上限。这需要再招一位辅导员。',
+    'match.fix.no-shared-time': '没有人与这位学生有共同的周末时段。可以请学生再填一个时段，或招募更靠西部时区的辅导员。',
+    'match.fix.no-shared-goal': '没有可用的辅导员教这位学生想学的科目。可以针对该科目招募，或问问学生还有什么需要。',
+    'match.fix.level-outside-comfort': '没有可用的辅导员填写可教这一英语水平。值得问问是否有人愿意尝试。',
+    'match.fix.tutor-not-accepting': '合适的辅导员目前不接收新学生。',
+    'match.fix.tutor-inactive': '合适的辅导员正在休息。',
+    'match.fix.student-inactive': '该学生已标记为未在读。',
     'toast.sampleLoaded': '示例数据已载入。',
     'toast.imported': '已导入 {count} 条记录。',
     'toast.exported': '已保存 {name}',
@@ -559,16 +759,36 @@ const STRINGS = {
 
 const missingWarned = new Set();
 
-let current = resolveInitialLang();
+let current = storedLang() ?? browserLang();
 
-function resolveInitialLang() {
+/** The language this browser has explicitly chosen, or null. */
+export function storedLang() {
   const saved = loadLangPreference();
-  if (LANGS.includes(saved)) return saved;
+  return LANGS.includes(saved) ? saved : null;
+}
 
+/** True once somebody has actually used the toggle. */
+export function hasExplicitLang() {
+  return storedLang() !== null;
+}
+
+function browserLang() {
   const nav = (globalThis.navigator?.languages ?? [globalThis.navigator?.language ?? 'en'])
     .join(',')
     .toLowerCase();
   return nav.includes('zh') ? 'zh' : 'en';
+}
+
+/**
+ * The language a role should start in.
+ *
+ * Students and guardians get Chinese by default: they are the people least
+ * likely to read English, and asking a family to hunt for a toggle before
+ * they can read their own child's homework is the opposite of being served.
+ * An explicit choice always wins over this.
+ */
+export function defaultLangFor(role) {
+  return role === 'student' || role === 'guardian' ? 'zh' : browserLang();
 }
 
 export function getLang() {
@@ -579,10 +799,10 @@ export function getLocale() {
   return LOCALES[current];
 }
 
+/** Switch language for this render. Does not persist — see chooseLang. */
 export function setLang(lang) {
   if (!LANGS.includes(lang)) return current;
   current = lang;
-  saveLangPreference(lang);
   // Guarded so the dictionaries can be checked outside a browser.
   if (typeof document !== 'undefined') {
     document.documentElement.lang = lang === 'zh' ? 'zh-Hans' : 'en';
@@ -590,8 +810,15 @@ export function setLang(lang) {
   return current;
 }
 
+/** Switch language and remember it, overriding any role default from here on. */
+export function chooseLang(lang) {
+  if (!LANGS.includes(lang)) return current;
+  saveLangPreference(lang);
+  return setLang(lang);
+}
+
 export function toggleLang() {
-  return setLang(current === 'en' ? 'zh' : 'en');
+  return chooseLang(current === 'en' ? 'zh' : 'en');
 }
 
 /**

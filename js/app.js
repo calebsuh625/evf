@@ -7,7 +7,10 @@
  */
 
 import * as store from './store.js';
-import { t, applyStaticStrings, toggleLang, getLang, setLang } from './i18n.js';
+import {
+  t, applyStaticStrings, toggleLang, getLang, setLang,
+  hasExplicitLang, storedLang, defaultLangFor
+} from './i18n.js';
 import { el, clear, toast } from './dom.js';
 
 import { render as renderHome } from './views/home.js';
@@ -25,6 +28,8 @@ import { render as renderTutorLog } from './views/tutor-log.js';
 import { render as renderTutorHours } from './views/tutor-hours.js';
 import { render as renderTutorStudent } from './views/tutor-student.js';
 import { render as renderTutorAvailability } from './views/tutor-availability.js';
+import { render as renderMatching } from './views/matching.js';
+import { render as renderStudentHome } from './views/student-home.js';
 import { render as renderNotFound } from './views/not-found.js';
 
 /**
@@ -48,6 +53,7 @@ const ROUTES = [
   { path: '/hours',    key: 'nav.hours',    nav: ['admin'], render: renderHours },
   { path: '/data',     key: 'nav.data',     nav: ['admin'], render: renderData },
   { path: '/settings', key: 'nav.settings', nav: ['admin'], render: renderSettings },
+  { path: '/admin/matching', key: 'match.nav', nav: ['admin'], render: renderMatching },
 
   // Tutor
   { path: '/tutor',                   key: 'tutor.nav.home',         nav: ['tutor'], role: 'tutor', render: renderTutorHome },
@@ -55,6 +61,9 @@ const ROUTES = [
   { path: '/tutor/availability',      key: 'tutor.nav.availability', nav: ['tutor'], role: 'tutor', render: renderTutorAvailability },
   { path: '/tutor/log/:pairingId',    key: 'tutor.log.title',        nav: [],        role: 'tutor', render: renderTutorLog, screen: 'tutor-log' },
   { path: '/tutor/student/:studentId', key: 'tutor.student.title',   nav: [],        role: 'tutor', render: renderTutorStudent },
+
+  // Student and guardian
+  { path: '/student', key: 'st.nav.home', nav: ['student', 'guardian'], role: 'student', render: renderStudentHome },
 
   // Reachable from the footer rather than the main nav: it is a proof, not
   // a screen anyone works in day to day.
@@ -112,7 +121,17 @@ export function matchRoute(path) {
 let currentPath = null;
 
 function currentRole() {
-  return store.currentTutor(store.getState()) ? 'tutor' : 'admin';
+  return store.currentView(store.getState()).role;
+}
+
+/**
+ * Apply the language this browser should be in.
+ *
+ * An explicit choice always wins. Otherwise the role decides, which is how a
+ * student or guardian lands in Chinese without touching anything.
+ */
+function applyLangForRole() {
+  setLang(hasExplicitLang() ? storedLang() : defaultLangFor(currentRole()));
 }
 
 function renderNav() {
@@ -145,6 +164,7 @@ function renderRolePicker() {
 
   const data = store.getState();
   const tutors = store.tutors(data).filter((x) => x.active !== false);
+  const students = store.students(data).filter((x) => x.active !== false);
   const viewAs = store.loadViewAs();
 
   const select = el('select', {
@@ -154,7 +174,9 @@ function renderRolePicker() {
     onChange: (e) => {
       const value = e.target.value;
       store.saveViewAs(value);
-      navigate(value === 'admin' ? '/' : '/tutor');
+      applyLangForRole();
+      applyStaticStrings();
+      navigate(homeFor(store.currentView(store.getState()).role));
       renderRoute();
     }
   },
@@ -166,12 +188,29 @@ function renderRolePicker() {
             text: x.preferredName || x.name,
             selected: x.id === viewAs
           })))
+      : null,
+    students.length
+      ? el('optgroup', { label: t('role.students') },
+          students.map((x) => el('option', {
+            value: x.id,
+            text: x.preferredName || x.name,
+            selected: x.id === viewAs
+          })))
+      : null,
+    // A guardian is not a record — they are whoever is holding the phone.
+    students.length
+      ? el('optgroup', { label: t('role.guardians') },
+          students.map((x) => el('option', {
+            value: store.guardianViewFor(x.id),
+            text: t('role.guardianOf', { name: x.preferredName || x.name }),
+            selected: store.guardianViewFor(x.id) === viewAs
+          })))
       : null
   );
 
-  // A tutor id that is no longer in the data falls back to the coordinator
-  // rather than leaving the app pointed at nobody.
-  if (viewAs !== 'admin' && !tutors.some((x) => x.id === viewAs)) select.value = 'admin';
+  // A person id no longer in the data falls back to the coordinator rather
+  // than leaving the app pointed at nobody.
+  if (viewAs !== 'admin' && store.currentView(data, viewAs).role === 'admin') select.value = 'admin';
 
   mount.append(select);
 }
@@ -183,15 +222,19 @@ function renderRoute({ scrollToTop = true } = {}) {
   const { path, params: query } = parseHash(location.hash);
   const { route, params } = matchRoute(path);
   currentPath = route.path;
+  document.body.dataset.role = currentRole();
   // Lets a focused screen reclaim the chrome it does not need — see the
   // tutor-log rules in css/tutor.css.
   document.body.dataset.screen = route.screen ?? '';
 
   clear(container);
 
-  // A tutor screen with no tutor selected explains itself instead of throwing.
-  if (route.role === 'tutor' && !store.currentTutor(store.getState())) {
-    container.append(needsTutor());
+  const view = store.currentView(store.getState());
+
+  // A role-specific screen with nobody selected explains itself rather than
+  // throwing. This is navigation, not access control — there is no auth here.
+  if (route.role && route.role !== view.role && !(route.role === 'student' && view.role === 'guardian')) {
+    container.append(needsPerson(route.role));
     renderRolePicker();
     renderNav();
     document.title = `${t(route.key)} · ${t('app.title')}`;
@@ -204,7 +247,10 @@ function renderRoute({ scrollToTop = true } = {}) {
       query,
       navigate,
       store,
-      tutor: store.currentTutor(store.getState()),
+      tutor: view.role === 'tutor' ? view.person : null,
+      student: view.role === 'student' || view.role === 'guardian' ? view.person : null,
+      isGuardian: view.role === 'guardian',
+      role: view.role,
       nowIso: new Date().toISOString()
     });
   } catch (err) {
@@ -221,14 +267,22 @@ function renderRoute({ scrollToTop = true } = {}) {
   if (scrollToTop) window.scrollTo({ top: 0 });
 }
 
-function needsTutor() {
+function needsPerson(role) {
+  const key = role === 'student' ? 'role.needStudent' : 'role.needTutor';
   return el('section', { class: 'empty' },
-    el('h2', { text: t('role.needTutor.title') }),
-    el('p', { text: t('role.needTutor.body') }),
+    el('h2', { text: t(`${key}.title`) }),
+    el('p', { text: t(`${key}.body`) }),
     el('div', { class: 'empty__actions' },
       el('a', { class: 'btn btn--primary', href: '#/', text: t('role.needTutor.action') })
     )
   );
+}
+
+/** Where each role's home is. */
+function homeFor(role) {
+  if (role === 'tutor') return '/tutor';
+  if (role === 'student' || role === 'guardian') return '/student';
+  return '/';
 }
 
 /** One broken screen should not take down the shell. */
@@ -269,12 +323,12 @@ function boot() {
   // Tell the file:// guard in index.html that modules did load.
   window.__EVF_BOOTED = true;
 
-  setLang(getLang());
+  const cache = store.load();
+
+  applyLangForRole();
   applyStaticStrings();
   wireLangToggle();
-  document.body.dataset.role = store.currentTutor(store.getState()) ? 'tutor' : 'admin';
-
-  const cache = store.load();
+  document.body.dataset.role = currentRole();
   if (cache.error) {
     console.warn('[app] cache did not load:', cache.error);
   }
@@ -285,7 +339,7 @@ function boot() {
   // dataset is a few hundred records, so a full re-render is imperceptible
   // and there is no stale-view class of bug to debug.
   store.subscribe(() => {
-    document.body.dataset.role = store.currentTutor(store.getState()) ? 'tutor' : 'admin';
+    document.body.dataset.role = currentRole();
     renderRoute({ scrollToTop: false });
   });
 

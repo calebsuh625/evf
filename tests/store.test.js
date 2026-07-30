@@ -93,7 +93,7 @@ function fixture(overrides = {}) {
 describe('emptyProgram', () => {
   it('is stamped with the current version', () => {
     equal(emptyProgram().version, SCHEMA_VERSION);
-    equal(SCHEMA_VERSION, 3);
+    ok(SCHEMA_VERSION >= 4, 'the version only ever goes up');
   });
 
   it('has every collection present and empty', () => {
@@ -167,14 +167,26 @@ describe('migrate', () => {
     equal(data.people.length, 6);
   });
 
+  /** The versions a file at `from` must be migrated through. */
+  const chainFrom = (from) =>
+    Array.from({ length: SCHEMA_VERSION - from }, (_, i) => from + i);
+
   it('reads a v1 file by its schemaVersion key', () => {
     const { applied } = migrate({ schemaVersion: 1, tutors: [], students: [], matches: [], sessions: [] });
-    deepEqual(applied, [1, 2]);
+    deepEqual(applied, chainFrom(1));
   });
 
   it('treats a file with no version field as version 0', () => {
     const { applied } = migrate({ tutors: [], students: [] });
-    deepEqual(applied, [0, 1, 2]);
+    deepEqual(applied, chainFrom(0));
+  });
+
+  it('walks every version in order, with no gaps', () => {
+    // Guards against a migration being added without its predecessor, which
+    // would strand every older export.
+    const { applied, data } = migrate({ tutors: [], students: [] });
+    deepEqual(applied, chainFrom(0));
+    equal(data.version, SCHEMA_VERSION);
   });
 
   it('migrates the full v0 chain through to the current version', () => {
@@ -192,7 +204,7 @@ describe('migrate', () => {
     };
 
     const { data, applied } = migrate(legacy);
-    deepEqual(applied, [0, 1, 2]);
+    deepEqual(applied, chainFrom(0));
     equal(data.version, SCHEMA_VERSION);
     equal(data.program.name, 'Old Program');
 
@@ -283,7 +295,7 @@ describe('migrate', () => {
       pairings: [], sessions: [], availability: []
     };
     const { data, applied } = migrate(v2);
-    deepEqual(applied, [2]);
+    deepEqual(applied, chainFrom(2));
     equal(data.people[0].acceptingStudents, true);
     equal(data.people[1].acceptingStudents, true, 'a tutor on a break is still open to pairing later');
     equal(data.people[1].active, false, 'and active is untouched');
@@ -297,6 +309,22 @@ describe('migrate', () => {
       pairings: [], sessions: [], availability: []
     });
     equal(data.people[0].acceptingStudents, false);
+  });
+
+  it('gives v3 tutors an interests list', () => {
+    const { data, applied } = migrate({
+      version: 3,
+      people: [
+        { id: 't1', role: 'tutor', name: 'Avery' },
+        { id: 't2', role: 'tutor', name: 'Blake', interests: ['chess'] },
+        { id: 's1', role: 'student', name: 'Ming', interests: ['chess'] }
+      ],
+      pairings: [], sessions: [], availability: []
+    });
+    deepEqual(applied, [3]);
+    deepEqual(data.people[0].interests, [], 'empty is a fine answer');
+    deepEqual(data.people[1].interests, ['chess'], 'an existing list is left alone');
+    deepEqual(data.people[2].interests, ['chess'], 'students already had the field');
   });
 
   it('fills in collections a partial file omitted', () => {
@@ -539,7 +567,7 @@ describe('JSON export/import round trip', () => {
   it('migrates a v0 file on import', () => {
     const legacy = JSON.stringify({ programName: 'Legacy', tutors: [], students: [], matches: [], sessions: [] });
     const { data, migrated } = parseProgramJson(legacy);
-    deepEqual(migrated, [0, 1, 2]);
+    deepEqual(migrated, [0, 1, 2, 3]);
     equal(data.version, SCHEMA_VERSION);
     equal(data.program.name, 'Legacy');
   });

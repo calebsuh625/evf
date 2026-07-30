@@ -281,6 +281,50 @@ tutor wants another student, and `acceptingStudents` is separate from
 `active`: a tutor with a full plate is still very much active. Turning the
 toggle off changes nothing else.
 
+## The student and guardian screens
+
+`#/student`, for the student or whoever is holding their phone.
+
+**Core rule: they never have required data entry.** They are being served, not
+managed. There is no form a student must complete, no profile to maintain, no
+attendance to confirm, nothing that nags. A test asserts the student view
+contains **zero** editable controls and zero `required` attributes; if that
+ever fails, something has been added that should not exist.
+
+**Deliberately not built**, and not to be added without a very good reason:
+browsing and booking tutors from a list, cancellation flows, penalties,
+required forms, ratings.
+
+**Chinese by default for these roles.** `defaultLangFor(role)` returns `zh` for
+a student or guardian. An explicit choice via the toggle always wins and is
+remembered — `hasExplicitLang()` is the difference between "nobody has said"
+and "somebody chose English".
+
+**A guardian is not a record.** They are whoever is holding the phone, so
+`viewAs` carries `guardian:<studentId>` rather than there being a guardian
+person to register. Modelling them properly would mean asking a family to sign
+up before they can read their own child's homework.
+
+**Guardian contact fields are editable only from the guardian view**, every
+field is optional, and **blank is a complete answer** — clearing a field and
+saving must work, and there is a test for it.
+
+**Built for a phone on a slow connection.** No images, no icon font, nothing
+fetched from anywhere. The session history renders a page at a time rather
+than a year of classes nobody scrolled to.
+
+## No external assets, ever
+
+The students are in mainland China. A CDN that is slow, blocked, or simply
+unreachable from there does not degrade this app, it breaks it — for exactly
+the people least able to work around it.
+
+`tests/assets.test.js` checks what the browser **actually fetched**, via
+Resource Timing, rather than reading the source and hoping the source is the
+whole story: every resource same-origin, no off-origin `link`/`script`/`img`,
+and no `@font-face` pointing outside the origin. It only runs in a browser and
+reports as **skipped** in Node rather than passing vacuously.
+
 ## The role picker
 
 There is no auth. `viewAs` is 'admin' or a person id in localStorage, and it
@@ -306,6 +350,51 @@ follow-up, the sessions behind the total, and signature lines.
 
 Print rules force black text — the on-screen component styles put table
 headers in a grey that prints almost invisibly.
+
+## Matching
+
+`js/matching.js` and `#/admin/matching`. The hard problem the product exists
+to solve.
+
+**Schedule overlap is a hard requirement.** Zero shared time is not a low
+score, it is not a pairing, and nothing else can compensate — there is no
+session to have. A test pins a pair that matches on subject, level, interests
+and language and is still excluded for having no time.
+
+**A score is never surfaced without its reasoning.** Every candidate carries
+`reasons` (why this pair) and `weaknesses` (what is fragile about it). The
+number exists to order the list; the sentences are what a coordinator reads
+and repeats to a parent. A test walks every eligible pair and fails if any
+explains nothing.
+
+**Reasoning is `{ code, values }`, never English sentences.** That keeps the
+module free of UI copy so the same explanation renders in Chinese, and it
+makes the tests assert facts rather than wording. The view translates, and
+translates the weekday and part-of-day inside the values too, so nothing comes
+out half-rendered.
+
+**The load-balancing term has to be re-scored as it assigns.** `suggestPairings`
+runs one assignment per round and re-ranks in between. Ranking once and walking
+the list looks equivalent and is not: the balance term would be computed
+against the starting load and never see the load it was itself creating, so
+every student would land on whichever tutor scored best and the balancing would
+silently do nothing. There is a test asserting three students across two tutors
+come out 2/1 rather than 3/0.
+
+**Redundant blockers must not double-count.** A tutor who is both full and not
+accepting has two blockers but one problem, and counting them separately made
+a near-miss look further away than a tutor who simply teaches the wrong
+subject. `BLOCKER_CATEGORY` collapses them for the "closest candidate" ranking.
+
+**The system suggests; a human accepts.** Nothing auto-assigns, there is no
+"accept all", and `matchingReport` is asserted not to mutate the pairings
+table. Pairings are created only by `store.createPairing`, called from a click.
+
+Three things the screen surfaces beyond the suggestions, because a coordinator
+will not think to look for them: students nobody can take (with the specific
+fix), volunteers with capacity and no viable student (an unused volunteer does
+not complain, they drift away), and active pairings whose availability has
+drifted apart (nobody will mention it).
 
 ## The self-test panel
 

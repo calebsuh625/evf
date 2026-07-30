@@ -35,10 +35,18 @@ body {
 }
 .brand__mark { color: var(--accent); }
 
-.app-header__tools { margin-left: auto; }
+.app-header__tools {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-left: auto;
+}
 
 .nav {
   display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
   gap: var(--sp-1);
   overflow-x: auto;
   scrollbar-width: none;

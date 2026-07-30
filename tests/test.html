@@ -32,6 +32,8 @@
   .case--pass .case__mark { color: var(--good); }
   .case--fail .case__mark { color: #c33; }
   .case--fail { color: #c33; }
+  .case--skip { color: var(--ink-faint); }
+  .case__reason { color: var(--ink-faint); font-size: .8125rem; }
   .case__body { min-width: 0; }
   .case pre {
     margin: 6px 0 2px; padding: 10px;
@@ -72,6 +74,7 @@ await import('./csv.test.js');
 await import('./store.test.js');
 await import('./tutor.test.js');
 await import('./i18n.test.js');
+await import('./assets.test.js');
 
 const results = document.getElementById('results');
 const summary = document.getElementById('summary');
@@ -95,13 +98,15 @@ const summaryFor = await run((event) => {
     return;
   }
 
-  if (event.type === 'pass' || event.type === 'fail') {
+  if (event.type === 'pass' || event.type === 'fail' || event.type === 'skip') {
+    const mark = { pass: '✓', fail: '✕', skip: '–' }[event.type];
     const row = el('div', `case case--${event.type}`);
-    row.append(el('span', 'case__mark', event.type === 'pass' ? '✓' : '✕'));
+    row.append(el('span', 'case__mark', mark));
 
     const body = el('div', 'case__body');
     body.append(el('span', null, event.name));
     if (event.type === 'fail') body.append(el('pre', null, event.error));
+    if (event.type === 'skip') body.append(el('span', 'case__reason', ` — ${event.reason}`));
     row.append(body);
 
     suiteNode.append(row);
@@ -114,7 +119,9 @@ const summaryFor = await run((event) => {
     count.textContent = event.failed === 0
       ? `${event.passed} passed`
       : `${event.failed} failed, ${event.passed} passed`;
-    detail.textContent = `${event.total} tests`;
+    detail.textContent = event.skipped
+      ? `${event.total} tests · ${event.skipped} skipped`
+      : `${event.total} tests`;
     document.title = `${event.failed === 0 ? 'PASS' : 'FAIL'} · ${event.total} tests`;
   }
 });
