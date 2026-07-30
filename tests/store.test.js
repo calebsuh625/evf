@@ -93,7 +93,7 @@ function fixture(overrides = {}) {
 describe('emptyProgram', () => {
   it('is stamped with the current version', () => {
     equal(emptyProgram().version, SCHEMA_VERSION);
-    ok(SCHEMA_VERSION >= 4, 'the version only ever goes up');
+    ok(SCHEMA_VERSION >= 5, 'the version only ever goes up');
   });
 
   it('has every collection present and empty', () => {
@@ -311,6 +311,24 @@ describe('migrate', () => {
     equal(data.people[0].acceptingStudents, false);
   });
 
+  it('treats an existing program as real data, not a demo', () => {
+    // Anything already out there is somebody's actual program.
+    const { data, applied } = migrate({
+      version: 4, program: { name: 'Real Program' },
+      people: [], pairings: [], sessions: [], availability: []
+    });
+    deepEqual(applied, [4]);
+    equal(data.program.sampleData, false);
+  });
+
+  it('keeps the demo marker when a file already carries it', () => {
+    const { data } = migrate({
+      version: 4, program: { name: 'Demo', sampleData: true },
+      people: [], pairings: [], sessions: [], availability: []
+    });
+    equal(data.program.sampleData, true, 'an exported demo must still announce itself');
+  });
+
   it('gives v3 tutors an interests list', () => {
     const { data, applied } = migrate({
       version: 3,
@@ -321,7 +339,7 @@ describe('migrate', () => {
       ],
       pairings: [], sessions: [], availability: []
     });
-    deepEqual(applied, [3]);
+    deepEqual(applied, [3, 4]);
     deepEqual(data.people[0].interests, [], 'empty is a fine answer');
     deepEqual(data.people[1].interests, ['chess'], 'an existing list is left alone');
     deepEqual(data.people[2].interests, ['chess'], 'students already had the field');
@@ -567,7 +585,7 @@ describe('JSON export/import round trip', () => {
   it('migrates a v0 file on import', () => {
     const legacy = JSON.stringify({ programName: 'Legacy', tutors: [], students: [], matches: [], sessions: [] });
     const { data, migrated } = parseProgramJson(legacy);
-    deepEqual(migrated, [0, 1, 2, 3]);
+    deepEqual(migrated, Array.from({ length: SCHEMA_VERSION }, (_, i) => i));
     equal(data.version, SCHEMA_VERSION);
     equal(data.program.name, 'Legacy');
   });

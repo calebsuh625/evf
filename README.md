@@ -3,18 +3,71 @@
 A coordinator for a volunteer tutoring program: US high school students tutor
 students in mainland China, one-on-one, on weekends.
 
+**[Live demo → calebsuh625.github.io/evf](https://calebsuh625.github.io/evf/)**
+
 It is a static site. There is no backend, no login, and no server holding
 children's names, schools, or guardian contacts. Everything runs in the browser,
 and the data lives in a JSON file the coordinator keeps.
 
-**Status:** Feature-complete for a first term. Tutors, students and guardians,
-and coordinators all have their screens; the matching engine, the hours
-exports, and the backup/restore path are all working.
+The demo loads invented data and says so, loudly, at the top of every screen.
 
-There is no login yet: a picker at the top right chooses whether you are
-looking as the coordinator or as a particular tutor, and it remembers.
+---
 
-## Running it
+## What it does
+
+**For tutors** — the next class in both time zones with the correct weekday at
+each end, the homework they set last time, a card per student, and their hours.
+Logging a session is one tap from the dashboard, everything on chips, and it
+completes in under twenty seconds on a phone without scrolling. Hours export as
+a printable **volunteer service record** ready for a supervisor's signature —
+NHS, the Congressional Award and the President's Volunteer Service Award all ask
+for the same things and the printout carries all of them.
+
+**For students and their families** — their tutor, the next class in Beijing
+time with the meeting link, the current homework, and everything covered so far.
+Chinese by default, with an English toggle. **There is nothing a student has to
+fill in.** Guardian contact details are the one editable thing, only from the
+guardian view, and every field is optional.
+
+**For coordinators** — an overview with hours by week, month and term plus a
+growth chart; a **needs-attention** screen surfacing pairings that have quietly
+stopped, students with no tutor, and volunteers sitting idle; a matching engine
+that explains every suggestion in plain language; a filterable roster with
+inline editing; and one-click backup.
+
+## Product principles
+
+The seven principles this is built on are in **[CLAUDE.md](CLAUDE.md)**, with
+the reasoning and the technical rules that follow from them. In short:
+
+1. Every screen serves the person looking at it.
+2. Admin data is a byproduct, computed from things people did for their own reasons.
+3. No penalties, no strikes, no compliance enforcement, ever.
+4. Logging a session takes under 20 seconds on a phone.
+5. Students and guardians never have required data entry.
+6. Bilingual from day one.
+7. Everything exports.
+
+CLAUDE.md also records what this will **never** have — strike tracking,
+suspensions, compliance dashboards, automated nagging — and why. Read that
+before agreeing to add any of them.
+
+## Never commit real data
+
+`data/sample.json` is entirely invented and stays that way. Every name pairs an
+ordinary given name with a Greek-letter surname so it cannot be mistaken for a
+real person, and every address uses the IANA-reserved `example.org` domain.
+
+**Real tutor and student data must never enter this repository.** Not in
+`data/`, not in a test fixture, not pasted into an issue or a pull request, not
+in a screenshot. These are minors. The real records live in one JSON file the
+coordinator keeps privately — see [HANDOVER.md](HANDOVER.md).
+
+This is not a nice-to-have. It is the reason the app has no backend: there is no
+database of children's names and guardian contacts to leak, and committing a
+real export would undo that in one keystroke.
+
+## Running it locally
 
 The app is built from ES modules, and browsers refuse to load modules from a
 `file://` URL. Serve the folder:
@@ -25,161 +78,67 @@ cd evf
 python3 -m http.server 8000
 ```
 
-Open <http://localhost:8000/>. Click **Load sample data** to see it populated.
+Open <http://localhost:8000/>. Double-clicking `index.html` shows a short page
+explaining why that cannot work rather than a blank screen.
 
-Opening `index.html` by double-clicking shows a short page explaining this
-rather than a blank screen.
+There is **no build step and nothing to install** to run or deploy the app.
+`package.json` exists only so CI can drive a headless browser.
 
-## Deploying
-
-GitHub Pages, from the repo root. In **Settings → Pages**, set the source to
-*Deploy from a branch*, branch `main`, folder `/ (root)`. No build step and no
-configuration — the paths resolve correctly under a project subpath.
-
-## Tests
-
-Open <http://localhost:8000/tests/test.html>. 475 tests covering the
-timezone math, the pairing scorer, the hour computation, CSV handling, the
-tutor-facing selectors, the matcher, the admin figures, the chart geometry,
-the bilingual dictionary, asset provenance, colour contrast, accessible
-naming, and the store's migration, validation and export logic.
-
-A few of those read the browser's Resource Timing data and so only run in a
-browser; in Node they report as skipped rather than passing vacuously.
-
-There is also a **[time zone self-test](#/selftest)** built into the app itself
-— open the running site and follow the link in the footer. It runs the timezone
-assertions in your browser and shows them passing or failing, in plain language,
-in English or Chinese. The timezone math is the part of this app most likely to
-be wrong, so it is the part you can check without reading any code.
-
-They also run headless, because the logic modules are deliberately free of DOM
-code:
-
-```sh
-node -e "import('./tests/runner.js').then(async ({run}) => {
-  for (const f of ['time','matching','hours','csv','store','tutor','admin','i18n','assets','a11y']) await import('./tests/'+f+'.test.js');
-  const r = await run(e => e.type==='fail' && console.log('FAIL', e.name, e.error));
-  console.log(r); process.exit(r.failed ? 1 : 0);
-})"
-```
-
-## How the data works
+## Loading and exporting data
 
 The **exported JSON file is the source of truth.** localStorage is a convenience
-cache so a half-finished session log survives a phone browser evicting the tab.
+cache, so a half-finished session log survives a phone browser evicting the tab.
 
-- **Export** downloads everything as one readable, diffable JSON file.
-- **Import** replaces what is loaded. Files saved by older versions are migrated
-  forward automatically, so an old backup keeps opening. A malformed file is
-  refused with a list of exactly what is wrong, and nothing changes.
-- **Spreadsheets** import a roster from CSV and export any table as CSV. An
-  import adds and updates rows; it never deletes.
-- **Clear this browser** wipes the cache and leaves exported files untouched.
+Everything is on **Export** (`#/admin/export`):
+
+- **Download backup** — everything as one dated JSON file. It restores
+  completely and is the only file anyone needs to keep.
+- **Restore** — drop a backup in. Files saved by older versions are migrated
+  forward automatically, so a file from last term still opens. A malformed file
+  is refused with a list of exactly what is wrong, and nothing changes.
+- **Spreadsheets** — CSV for roster, availability, pairings and sessions, which
+  re-import; plus hours-by-tutor and a session report, which are derived and so
+  are export-only.
+- **Load sample data** — the demo dataset, for showing somebody the app.
 
 Export regularly. That file is what makes the program survive any individual
 leaving.
 
-### The document
+## Deploying
 
-One versioned JSON document with four tables: `people` (tutors and students
-together, with a `role`), `pairings`, `sessions`, and `availability`. Sessions
-belong to a pairing rather than to a tutor and student directly, because the
-pairing is the thing that persists over time. See [CLAUDE.md](CLAUDE.md) for the
-field-by-field shape and the reasoning.
+GitHub Pages from the repo root: **Settings → Pages → Deploy from a branch →
+`main` → `/ (root)`**. Already configured, so pushes to `main` publish
+automatically. No build step and no configuration — paths resolve correctly
+under the `/evf/` project subpath.
 
-## For tutors
+## Tests
 
-The tutor screens are the ones that have to earn their keep, because the
-program only works if volunteers want to come back.
+[![tests](https://github.com/calebsuh625/evf/actions/workflows/tests.yml/badge.svg)](https://github.com/calebsuh625/evf/actions/workflows/tests.yml)
 
-- **Dashboard** — the next class in both time zones with the correct weekday
-  at each end, the homework you set last time, what you covered, a card per
-  student, and your hours. Classes you have not written up appear as a quiet
-  list: no counter, no streak, no deadline.
-- **Log a session** — one tap from the dashboard, pre-filled, everything on
-  chips. Built to complete in under twenty seconds on a phone without
-  scrolling, which is measured rather than assumed.
-- **My hours** — totals by term and all-time, split into teaching, prep and
-  follow-up, with every session listed. Exports as CSV, and prints as a
-  **volunteer service record** ready for a supervisor's signature: NHS, the
-  Congressional Award, and the President's Volunteer Service Award all ask for
-  the same things and the printout carries all of them.
-- **Student page** — the full session history, written so that a tutor taking
-  over can read it and know where to pick up.
-- **Availability** — recurring weekend windows in your own clock, echoed in
-  Beijing time, plus a plain "not taking new students right now" switch.
+**477 tests.** Every push and pull request runs them and fails on a regression.
 
-## For students and their families
+In a browser: open <http://localhost:8000/tests/test.html>.
 
-`#/student` shows the tutor, the next class in Beijing time with the meeting
-link, the current homework, and everything covered so far.
+Headless:
 
-**There is nothing a student has to fill in.** No profile, no attendance, no
-forms. They are being served, not managed — a test asserts the page contains
-zero editable controls. Guardian contact details are the one thing that can be
-edited, only from the guardian view, and every field is optional: leaving them
-all blank is a complete answer and changes nothing about how the program runs.
+```sh
+node tests/run-node.mjs                              # 446 tests, nothing to install
+npm install && npx playwright install chromium
+node tests/run-browser.mjs http://localhost:8000     # all 477
+```
 
-The screens default to Simplified Chinese for these roles, with an English
-toggle that is remembered once used. They are built for a phone on a slow
-connection: no images, no web fonts, nothing loaded from outside this
-repository, and a deliberately small page.
+The Node run needs nothing installed, because the logic modules are deliberately
+free of DOM code. Eleven tests genuinely need a browser — colour contrast read
+from the live stylesheet, accessible names from the rendered DOM, asset
+provenance from Resource Timing — and they report as **skipped** in Node rather
+than passing quietly. CI runs both, treats a bare console error as a failure,
+and separately checks that no external URL has crept into a shipped file.
 
-## Matching
-
-`#/admin/matching` is where a coordinator turns a list of waiting students and
-willing volunteers into pairings.
-
-Schedule overlap is a hard requirement — fifteen hours apart, a pair with no
-shared window has no session to have, so it is never suggested no matter how
-well they fit otherwise. Beyond that the scorer weighs subject fit, English
-level, shared interests, and how loaded each tutor already is, so students
-spread across volunteers instead of piling onto whoever fits best.
-
-**Every suggestion explains itself**, in plain language and in either language:
-
-> 3 shared hours, Saturday morning Beijing time (08:00–11:00) · Both listed
-> english conversation · Tutor is comfortable at intermediate level · Both
-> interested in k-pop · Tutor has 1 of 2 places open
->
-> *Worth knowing:* Only one shared window — fragile if either has to cancel ·
-> This is the tutor's last place
-
-A score is never shown without that reasoning. The screen also surfaces the
-things nobody thinks to look for: students nobody can currently take and
-exactly why, volunteers sitting idle with room to spare, and existing pairings
-whose availability has quietly drifted apart.
-
-**The system suggests; a human accepts.** Nothing is ever paired
-automatically.
-
-## For coordinators
-
-- **Overview** (`#/admin`) — pairings, tutors and students, hours this week,
-  month and term, and growth over time as an inline SVG chart. No charting
-  library: it is forty lines of arithmetic, and a CDN would be one more thing
-  that can fail from China.
-- **Needs attention** (`#/admin/attention`) — the screen worth building the
-  rest for. Pairings with nothing logged for two weeks, longest first;
-  students with no tutor; tutors with room; classes that did not happen. Every
-  row carries contact details, because the point is to go and ask.
-- **Matching** (`#/admin/matching`) — described above.
-- **Roster** (`#/admin/roster`) — everyone, filterable, with detail pages, inline
-  editing, and CSV import for bulk loading.
-- **Export** (`#/admin/export`) — one-click dated JSON backup, and CSVs of
-  everything.
-
-**Everything on these screens is computed.** Nobody is ever asked to fill
-something in so that an admin screen can show a number. A person's status is
-derived from their pairings every time it is displayed, never stored, so it
-cannot be stale.
-
-**Some things are deliberately absent**: no strike tracking, no suspensions,
-no compliance dashboards, no automated nagging. A tutor who has gone quiet for
-two weeks does not need a warning, they need someone to ask if they are all
-right — so the app surfaces the pairing and a phone number, and stops there.
-The reasoning is in [CLAUDE.md](CLAUDE.md).
+There is also a **[time zone self-test](https://calebsuh625.github.io/evf/#/selftest)**
+built into the app: it runs the timezone assertions in your own browser and
+shows them passing, in plain language, in either language. The timezone maths is
+the part most likely to be wrong, so it is the part you can check without
+reading any code.
 
 ## Accessibility, weight and polish
 
@@ -189,31 +148,18 @@ Checked by tests rather than asserted:
   and fails if any text pair drops below 4.5:1.
 - **Keyboard throughout**, with a visible focus ring. A test fails the build if
   any rule sets `outline: none` on `:focus`.
-- **Named controls.** Every button, field and select has an accessible name,
-  and no two chips in the logging form share one — they read as "Prep 15 min",
-  not "15".
+- **Named controls.** Every button, field and select has an accessible name, and
+  no two chips in the logging form share one — they read as "Prep 15 min", not
+  "15".
 - **44px touch targets** on any coarse pointer.
 - **Every date carries its time zone**, because the same instant is a different
   day at each end of this program.
-- **No external requests at all** — verified from the browser's own resource
-  timings, not from reading the source.
+- **No external requests at all**, verified from the browser's own resource
+  timings rather than from reading the source.
 
-First visit is about **126 KB gzipped**, and views load on demand, so a student
-on a phone downloads 9 modules rather than 28 and never fetches the admin
-screens or the matcher. There are no images and no web fonts.
-
-The session-logging form fits without scrolling on a 375×667 phone, the
-smallest still in common use.
-
-## Continuity
-
-The program has to survive any individual leaving, including whoever built it.
-
-Handing it over is two things: the JSON backup and the address of this page.
-Whoever takes over loads the file and has everything — there is no account to
-transfer, no password to hand on, and no server anybody has to keep paying
-for. Backup, wipe and restore is covered by a test that asserts the restored
-program is identical.
+First visit is about **126 KB gzipped**. Views load on demand, so a student on a
+phone downloads 9 modules rather than 28 and never fetches the admin screens or
+the matcher. No images, no web fonts.
 
 ## Time zones
 
@@ -231,71 +177,65 @@ So the app stores two different kinds of time and never confuses them:
   a wall-clock range, and a zone, then resolved into real instants against a
   specific week. Storing these as UTC would silently break twice a year.
 
-Every conversion goes through `js/time.js`. The two core calls are
-`toUtc(localIso, tz)` and `fromUtc(utcIso, tz)`; passing a `Z`-suffixed instant
-where a local wall clock belongs is an error rather than a guess.
-
 Both US daylight-saving transitions fall on a Sunday, which is a tutoring day.
 One of those Sundays has a local 02:00–03:00 that does not exist, and the other
-has a 01:00–02:00 that happens twice. Both cases are detected and resolved
-deliberately — forward past the gap, and to the first of the two repeats — and
-both have tests and a visible check in the self-test panel.
+has a 01:00–02:00 that happens twice. Both are detected and resolved
+deliberately — forward past the gap, and to the first of the two repeats.
 
-## Privacy
+## Matching
 
-`data/sample.json` is entirely invented and stays that way. Every name pairs an
-ordinary given name with a Greek-letter surname so it cannot be mistaken for a
-real person, and every address uses the reserved `example.org` domain.
+Schedule overlap is a hard requirement: fifteen hours apart, a pair with no
+shared window has no session to have, so it is never suggested however well they
+fit otherwise. Beyond that the scorer weighs subject fit, English level, shared
+interests, and how loaded each tutor already is, so students spread across
+volunteers instead of piling onto whoever fits best.
 
-The dataset is deliberately awkward, because a demo that only shows the happy
-path teaches nothing: it includes 12 tutors, 20 students, 15 active pairings and
-three months of session history, plus a pairing that has gone quiet for over a
-month, five tutors at the maximum they set for themselves, a student no tutor
-can currently take, a pairing whose shared hour falls on different calendar days
-at each end, two students who fit the same single-slot tutor, a tutor in Arizona
-who never changes clocks, and students whose availability crosses local
-midnight.
+**Every suggestion explains itself**, in either language:
 
-**Never commit real tutor or student data.** Real data belongs only in an export
-the coordinator keeps privately.
+> 3 shared hours, Saturday morning Beijing time (08:00–11:00) · Both listed
+> english conversation · Tutor is comfortable at intermediate level · Both
+> interested in k-pop · Tutor has 1 of 2 places open
+>
+> *Worth knowing:* Only one shared window — fragile if either has to cancel ·
+> This is the tutor's last place
+
+A score is never shown without that reasoning. **The system suggests; a human
+accepts.** Nothing is ever paired automatically.
+
+## Continuity
+
+The program has to survive any individual leaving, including whoever built it.
+
+Handing it over is two things: the JSON backup and this URL. Whoever takes over
+loads the file and has everything — no account to transfer, no password to hand
+on, no server anybody has to keep paying for. Backup, wipe and restore is
+covered by a test asserting the restored program is identical.
+
+Start here: **[HANDOVER.md](HANDOVER.md)**.
 
 ## Layout
 
 ```
-index.html          app shell and view container
-css/                styles, one file per area
+index.html          app shell, sample-data banner, file:// guard
+css/                base (reset + tokens) · layout · components · views · tutor · print
 js/
-  app.js            bootstrap, hash routing, view switching
-  store.js          data model, load, save, import, export, migrate
-  time.js           timezone math      — pure functions, no DOM
-  matching.js       pairing scorer     — pure functions, no DOM
-  hours.js          hour computation   — pure functions, no DOM
-  csv.js            CSV parse/write    — pure functions, no DOM
-  tutor.js          tutor-facing views — pure functions, no DOM
+  app.js            bootstrap, hash routing, lazy view loading, role picker
+  store.js          data model, load/save, import/export, migrations
+  time.js           timezone math       — pure functions, no DOM
+  matching.js       pairing scorer      — pure functions, no DOM
+  hours.js          hour computation    — pure functions, no DOM
+  tutor.js          tutor-facing views  — pure functions, no DOM
   admin.js          coordinator figures — pure functions, no DOM
-  chart.js          chart geometry     — pure functions, no DOM
+  chart.js          chart geometry      — pure functions, no DOM
+  csv.js            CSV parse/write     — pure functions, no DOM
   selftest.js       the timezone assertions, as runnable scenarios
   i18n.js           English / Simplified Chinese
-  views/            one module per screen
-data/sample.json    committed demo dataset
-tests/              browser test runner and unit tests
+  views/            one module per screen, loaded on demand
+data/sample.json    committed demo dataset — synthetic only
+tests/              browser runner, headless runners, unit tests
 CLAUDE.md           product principles and technical rules
+HANDOVER.md         for the next coordinator
 ```
 
-The four pure modules take their data as arguments and touch no globals, so if
-the program later moves to a real backend they port across unchanged.
-
-## Design principles
-
-Summarised from [CLAUDE.md](CLAUDE.md), which is the full version:
-
-1. Every screen serves the person looking at it. Tutors and students are
-   volunteers and kids — the app gives them something useful rather than
-   extracting data from them.
-2. Admin data is a byproduct, computed from things people did for their own
-   reasons.
-3. No penalties, no strikes, no compliance enforcement, ever.
-4. Logging a session takes under 20 seconds on a phone.
-5. Students and guardians never have required data entry.
-6. Bilingual from day one.
-7. Everything exports.
+The pure modules take their data as arguments and touch no globals, so if the
+program later moves to a real backend they port across unchanged.

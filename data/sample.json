@@ -12,13 +12,14 @@
     "notAcceptingStudents": "p_t01, p_t04, p_t05, p_t06, p_t09 and p_t12 have acceptingStudents false, which is separate from being inactive.",
     "midnightSpanningAvailability": "Students in band E are free 22:00-01:00 Asia/Shanghai, a window that crosses local midnight."
   },
-  "version": 4,
+  "version": 5,
   "exportedAt": "2026-07-27T00:00:00.000Z",
   "program": {
     "name": "Weekend Tutoring",
     "adminTimeZone": "America/New_York",
     "studentTimeZone": "Asia/Shanghai",
     "defaultSessionMinutes": 60,
+    "sampleData": true,
     "terms": [
       {
         "id": "term_2026_summer",

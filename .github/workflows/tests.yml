@@ -1,0 +1,82 @@
+# Runs the unit suite on every push and pull request, and fails the build on
+# any regression.
+#
+# Two jobs on purpose. The Node job is the fast signal and needs nothing
+# installed — the pure logic modules are DOM-free, so they import straight into
+# Node. The browser job covers the checks that can only be made in a browser:
+# colour contrast read from the live stylesheet, accessible names from the
+# rendered DOM, and asset provenance from Resource Timing. Those are exactly
+# the ones that regress silently, so they must not be optional.
+#
+# Playwright is CI tooling. The app has no build step and no runtime
+# dependencies; nothing here is needed to serve the site.
+
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  node:
+    name: pure logic (node)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run the suite
+        run: node tests/run-node.mjs
+
+  browser:
+    name: full suite (headless chromium)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Playwright
+        run: npm install --no-audit --no-fund
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Serve the site
+        run: |
+          python3 -m http.server 8899 --directory . &
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:8899/index.html >/dev/null && break
+            sleep 1
+          done
+
+      - name: Run the suite in a browser
+        run: node tests/run-browser.mjs http://localhost:8899
+
+  no-external-requests:
+    name: no external references
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check for off-origin URLs in shipped files
+        run: |
+          # Students are in mainland China: a CDN that is blocked there does not
+          # degrade this app, it breaks it. example.org is IANA-reserved and only
+          # ever appears as sample data; the SVG namespace is not a fetch.
+          if grep -rnoE 'https?://[a-zA-Z0-9./_-]+' \
+               --include='*.html' --include='*.css' --include='*.js' \
+               index.html css js \
+             | grep -v 'example.org' \
+             | grep -v 'www.w3.org/2000/svg' \
+             | grep -v 'localhost'; then
+            echo "::error::Found an external URL in a shipped file."
+            exit 1
+          fi
+          echo "No external references."

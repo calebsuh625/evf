@@ -57,7 +57,7 @@ import {
 } from './csv.js';
 import { isValidTimeZone, parseHhMm } from './time.js';
 
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;
 
 const STORAGE_KEY = 'evf.program.v1';
 const LANG_KEY = 'evf.lang';
@@ -82,6 +82,10 @@ export function emptyProgram() {
       adminTimeZone: guessTimeZone(),
       studentTimeZone: 'Asia/Shanghai',
       defaultSessionMinutes: 60,
+      // True only for the committed demo dataset. Deliberately part of the
+      // document rather than a browser flag, so an export of the demo still
+      // announces itself to whoever opens it next.
+      sampleData: false,
       terms: []
     },
     people: [],
@@ -229,6 +233,19 @@ export function isLogged(session) {
  * newer. Never edit a shipped migration — add the next one.
  */
 const MIGRATIONS = {
+  /**
+   * 4 -> 5: the program gains `sampleData`, so the app can say out loud when
+   * what is on screen is the demo. Anything that already exists is somebody's
+   * real program, so it migrates to false.
+   */
+  4(data) {
+    return {
+      ...data,
+      version: 5,
+      program: { ...(data.program ?? {}), sampleData: data.program?.sampleData === true }
+    };
+  },
+
   /**
    * 0 -> 1: the pre-versioned prototype had no version field, kept program
    * settings as loose top-level keys, and stored session length as an end
@@ -940,7 +957,32 @@ export async function loadSampleData() {
     );
   }
   if (!res.ok) throw new Error(`Could not read data/sample.json (HTTP ${res.status}).`);
-  return importJson(await res.text());
+  const result = await importJson(await res.text());
+
+  // Belt and braces: the committed file says so, and so does the loader, so a
+  // hand-edited sample.json cannot quietly lose the marker.
+  if (getState().program.sampleData !== true) markAsSampleData(true);
+  return result;
+}
+
+/**
+ * Mark the loaded program as demo data, or as real.
+ *
+ * Clearing it is the coordinator's call and nothing else's: somebody who loads
+ * the demo, deletes it and types in their own roster has real data, and only
+ * they know that.
+ */
+export function markAsSampleData(isSample) {
+  update((current) => ({
+    ...current,
+    program: { ...current.program, sampleData: Boolean(isSample) }
+  }));
+  return getState().program.sampleData;
+}
+
+/** True when what is loaded is the demo dataset. */
+export function isSampleData(data = state) {
+  return data.program?.sampleData === true;
 }
 
 /* ------------------------------------------------------------------ *

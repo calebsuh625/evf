@@ -307,23 +307,41 @@ describe('session logging is usable without sight or a mouse', () => {
     deepEqual(unreachable, []);
   });
 
+  it('keeps a focus ring on browsers without :focus-visible', async () => {
+    // Safari below 15.4 ignores a :focus-visible-only rule entirely, which
+    // would leave keyboard users with nothing.
+    const css = await fetch('../css/base.css').then((r) => r.text());
+    ok(/(^|\n):focus\s*\{[^}]*outline:\s*2px/.test(css),
+      'no plain :focus fallback — old WebKit would show no ring at all');
+    ok(css.includes(':focus:not(:focus-visible)'),
+      'the fallback needs withdrawing for pointer focus on capable browsers');
+  });
+
   it('gives focus a visible outline rather than removing it', () => {
     const chip = doc.querySelector('.chip');
     chip.focus();
     equal(doc.activeElement, chip, 'a chip must be focusable');
 
-    // The reset must not have killed the focus ring anywhere.
-    let killed = false;
+    /*
+     * No rule may remove the focus ring, with exactly one exception:
+     * `:focus:not(:focus-visible)` is the canonical way to keep a ring for
+     * keyboard users on old WebKit while not showing it on a mouse click.
+     * Anything else that sets outline:none on :focus is a real regression.
+     */
+    const killers = [];
     for (const sheet of frame.contentDocument.styleSheets) {
       let rules;
       try { rules = sheet.cssRules; } catch { continue; }
       for (const rule of rules ?? []) {
-        if (!rule.selectorText?.includes(':focus')) continue;
+        const selector = rule.selectorText;
+        if (!selector?.includes(':focus')) continue;
         const outline = rule.style?.getPropertyValue('outline');
-        if (outline && /^\s*(none|0)\s*$/.test(outline)) killed = true;
+        if (!outline || !/^\s*(none|0)\s*$/.test(outline)) continue;
+        if (/:focus:not\(\s*:focus-visible\s*\)/.test(selector)) continue;
+        killers.push(selector);
       }
     }
-    ok(!killed, 'a :focus rule sets outline:none, which removes the keyboard focus ring');
+    deepEqual(killers, [], 'these rules remove the keyboard focus ring');
   });
 
   it('the save control is a real button with a name', () => {

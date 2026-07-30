@@ -11,7 +11,7 @@ import {
   t, applyStaticStrings, toggleLang, getLang, setLang,
   hasExplicitLang, storedLang, defaultLangFor
 } from './i18n.js';
-import { el, clear, toast } from './dom.js';
+import { el, clear, toast, button } from './dom.js';
 
 /*
  * Views load on demand.
@@ -142,6 +142,42 @@ function renderNav() {
 }
 
 /**
+ * The "this is demo data" banner.
+ *
+ * Driven by program.sampleData, which travels inside the document — so an
+ * export of the demo still announces itself, and a coordinator who has typed
+ * in real records can say so once and be believed.
+ */
+function renderSampleBanner() {
+  const mount = document.getElementById('sample-banner');
+  if (!mount) return;
+
+  const showing = store.isSampleData(store.getState());
+  mount.hidden = !showing;
+  clear(mount);
+  if (!showing) return;
+
+  mount.append(el('div', { class: 'sample-banner', role: 'status' },
+    el('span', { class: 'sample-banner__mark', 'aria-hidden': 'true', text: '!' }),
+    el('div', { class: 'sample-banner__body' },
+      el('strong', { text: t('sample.title') }),
+      el('span', { class: 'sample-banner__text', text: t('sample.body') })
+    ),
+    el('div', { class: 'sample-banner__actions' },
+      el('a', { class: 'btn btn--sm', href: '#/admin/export', text: t('sample.replace') }),
+      button(t('sample.dismiss'), {
+        variant: 'sm',
+        onClick: () => {
+          if (!confirm(t('sample.dismissConfirm'))) return;
+          store.markAsSampleData(false);
+          toast(t('sample.dismissed'));
+        }
+      })
+    )
+  ));
+}
+
+/**
  * The role picker. No auth yet, so the app simply asks who is looking, and
  * remembers. Listing real tutors is what makes the tutor screens usable at
  * all before there are accounts.
@@ -229,6 +265,7 @@ async function renderRoute({ scrollToTop = true } = {}) {
   if (route.role && route.role !== view.role && !(route.role === 'student' && view.role === 'guardian')) {
     container.append(needsPerson(route.role));
     renderRolePicker();
+    renderSampleBanner();
     renderNav();
     document.title = `${t(route.key)} · ${t('app.title')}`;
     return;
@@ -272,6 +309,7 @@ async function renderRoute({ scrollToTop = true } = {}) {
     : `${t(route.key)} · ${t('app.title')}`;
 
   renderRolePicker();
+  renderSampleBanner();
   renderNav();
   if (scrollToTop) window.scrollTo({ top: 0 });
 }

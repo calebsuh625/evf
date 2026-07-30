@@ -270,3 +270,40 @@ select {
 
 /* A control mid-action reads as busy to assistive tech, not just visually. */
 .btn[data-busy="true"] { opacity: .7; cursor: progress; }
+
+/* ------------------------------------------------------------------ *
+ * Sample-data banner
+ *
+ * Sits above every screen while program.sampleData is true. Loud enough that
+ * nobody demos the app and walks away thinking they saw real records, and
+ * dismissible only by explicitly saying the data is real.
+ * ------------------------------------------------------------------ */
+
+.sample-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-3);
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--warn-soft);
+  border-bottom: 1px solid var(--warn);
+  color: var(--ink);
+}
+.sample-banner__mark {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 24px; height: 24px;
+  font-weight: 700;
+  color: var(--warn-soft);
+  background: var(--warn);
+  border-radius: 50%;
+}
+.sample-banner__body { flex: 1 1 260px; display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: baseline; }
+.sample-banner__text { font-size: .875rem; color: var(--ink-soft); }
+.sample-banner__actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+
+/* The banner is chrome, not part of the record. */
+@media print { .sample-banner { display: none; } }
